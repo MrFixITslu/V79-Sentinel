@@ -24,6 +24,8 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: qa/package-lock.json
+      - name: Install isolated Python crypto test dependency
+        run: python3 -m pip install 'cryptography==45.0.7'
       - name: Python NOC tests with synthetic databases
         env:
           PYTHONDONTWRITEBYTECODE: '1'
