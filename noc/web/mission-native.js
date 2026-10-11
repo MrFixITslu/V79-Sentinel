@@ -178,6 +178,16 @@ function markLiveEvidenceUnavailable(){
  put("nativeInsight","The latest measurements could not be verified. Do not infer that services are healthy.");
  const badge=q("nativeLiveBadge");badge.textContent="MONITORING STATUS UNVERIFIED";badge.className="v79-chip v79-chip-warn";
 }
+// The independent monitor polls every 5 minutes. Two missed cycles plus a
+// small grace period must never be presented as current healthy evidence.
+const MAX_MONITOR_AGE_MS=11*60*1000;
+function currentMonitoringEvidence(s){
+ if(s?.mode!=="live"||s.error||!Array.isArray(s.services)||!s.services.length)return false;
+ const checkedAt=Date.parse(s.last_check);
+ if(!Number.isFinite(checkedAt))return false;
+ const age=Date.now()-checkedAt;
+ return age>=-120_000&&age<=MAX_MONITOR_AGE_MS;
+}
 async function refresh(){
  if(!active||inflight)return;inflight=true;const refreshGeneration=generation;
  try{
@@ -187,6 +197,11 @@ async function refresh(){
    request("/api/v1/netpulse/interfaces")
   ]);
   if(!active||refreshGeneration!==generation)return;
+  if(!currentMonitoringEvidence(status)){
+   markLiveEvidenceUnavailable();
+   put("nativeDataError","Monitoring evidence is missing, stale or degraded. Awaiting a fresh successful monitoring cycle.");
+   return;
+  }
   renderStatus(status,qa);renderNics(nics);
   put("nativeDataError","");
  }catch(e){
@@ -201,9 +216,12 @@ function start(){
  refreshId=window.setInterval(()=>{if(!q("appSection")?.hidden)void refresh();},30000);
 }
 function stop(){
- active=false;generation++;clear("netpulseProtocolBars");q("netpulseProtocolFilter").replaceChildren(new Option("All protocols","All"));put("netpulsePrivacy","Signed out; imported evidence cleared.");if(refreshId!==null)window.clearInterval(refreshId);refreshId=null;
- put("nativeServices","—");put("nativeLatency","—");
- clear("nativeQA");clear("netpulseNicRows");clear("nativeServiceRows");clear("nativeActivity");clear("netpulseFlowRows");clear("netpulsePacketRows");
+ active=false;generation++;if(refreshId!==null)window.clearInterval(refreshId);refreshId=null;
+ markLiveEvidenceUnavailable();
+ put("nativeDataError","");
+ clear("netpulseProtocolBars");q("netpulseProtocolFilter").replaceChildren(new Option("All protocols","All"));
+ put("netpulsePrivacy","Signed out; imported evidence cleared.");
+ clear("netpulseFlowRows");clear("netpulsePacketRows");
  investigation=null;
  put("netpulseImportStatus","No investigation imported.");
 }
