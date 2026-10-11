@@ -109,15 +109,35 @@ async function main(){
   await page.setViewportSize({width:390,height:844});
   await captureRoute('overview','enterprise-mobile-viewport.png');
   const mobileControls=await page.evaluate(()=>{
-   const hero=document.querySelector('#missionControlPanel .v79-hero')?.getBoundingClientRect();
-   const badge=document.querySelector('#nativeLiveBadge')?.getBoundingClientRect();
-   const refresh=document.querySelector('#nativeRefresh')?.getBoundingClientRect();
-   const metrics=document.querySelector('#missionControlPanel .v79-stats')?.getBoundingClientRect();
-   return {heroHeight:hero?.height||0,badgeHeight:badge?.height||0,refreshHeight:refresh?.height||0,metricTop:metrics?.top||9999};
+   const rect=selector=>document.querySelector(selector)?.getBoundingClientRect();
+   const hero=rect('#missionControlPanel .v79-hero');
+   const title=rect('#missionControlPanel .v79-ops-header h2');
+   const badge=rect('#nativeLiveBadge');
+   const freshness=rect('#nativeFreshness');
+   const refresh=rect('#nativeRefresh');
+   const metrics=rect('#missionControlPanel .v79-stats');
+   // Check actual contents rather than a brittle minimum hero height: G2.21
+   // intentionally removes the decorative visual and shortens the mobile hero.
+   const contentBottom=Math.max(title?.bottom||0,badge?.bottom||0,
+     freshness?.bottom||0,refresh?.bottom||0);
+   return {
+     heroHeight:hero?.height||0,heroTop:hero?.top||0,heroBottom:hero?.bottom||0,
+     titleHeight:title?.height||0,titleTop:title?.top||0,
+     badgeHeight:badge?.height||0,refreshHeight:refresh?.height||0,
+     freshnessHeight:freshness?.height||0,contentBottom,metricTop:metrics?.top||9999,
+   };
   });
-  assert(mobileControls.heroHeight>150&&mobileControls.heroHeight<400,'Mobile Overview must stay compact and readable');
-  assert(mobileControls.badgeHeight>22&&mobileControls.refreshHeight>20,'Mobile refresh and monitoring provenance must remain visible');
-  assert(mobileControls.metricTop<790,'First mobile monitoring cards should appear without scrolling far past the first viewport');
+  console.log('MOBILE OVERVIEW GEOMETRY '+JSON.stringify(mobileControls));
+  assert(mobileControls.heroHeight>96&&mobileControls.heroHeight<400,
+    'Mobile operations header missing or oversized: '+JSON.stringify(mobileControls));
+  assert(mobileControls.titleHeight>20&&mobileControls.titleTop>=mobileControls.heroTop-2,
+    'Mobile operations heading missing or clipped: '+JSON.stringify(mobileControls));
+  assert(mobileControls.badgeHeight>22&&mobileControls.refreshHeight>20&&mobileControls.freshnessHeight>10,
+    'Mobile provenance, freshness and refresh controls must remain visible: '+JSON.stringify(mobileControls));
+  assert(mobileControls.contentBottom<=mobileControls.heroBottom+2,
+    'Mobile operations header clips its visible controls: '+JSON.stringify(mobileControls));
+  assert(mobileControls.metricTop<790,
+    'First mobile monitoring cards should appear near the first viewport: '+JSON.stringify(mobileControls));
   assert.equal(await page.locator('#nativeServiceRows').evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),1,'Mobile service matrix must fit one column');
   assert.equal(await page.locator('#nativeQaRun').getAttribute('data-qa-freshness'),'historical','Historical QA provenance must remain visible on mobile');
   await page.screenshot({path:path.join(screenshots,'enterprise-mobile.png'),fullPage:true});
