@@ -59,8 +59,14 @@ async function main(){
   await page.locator('.nav-item[data-page="settings"]').click();await page.locator('#securityPanel').waitFor({state:'visible'});assert(await page.locator('#securityPanel').isVisible());assert(await page.locator('#operatorTools').isVisible());
   await page.locator('.nav-item[data-page="overview"]').click();await page.locator('#missionControlPanel').waitFor({state:'visible'});const screenshots=process.env.SENTINEL_QA_SCREENSHOTS_DIR||tmp;fs.mkdirSync(screenshots,{recursive:true});await page.screenshot({path:path.join(screenshots,'enterprise-desktop.png'),fullPage:true});
   await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(screenshots,'enterprise-mobile.png'),fullPage:true});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'Mobile document must not overflow');
+  const mobilePresentation=await page.evaluate(()=>{const nav=document.querySelector('.sidebar .nav'),tile=document.querySelector('.v79-stat'),metrics=document.querySelector('.v79-stats');return {navVisible:!!nav&&nav.getBoundingClientRect().height>0,navScroll:getComputedStyle(nav).overflowX,metricColumns:getComputedStyle(metrics).gridTemplateColumns.split(' ').length,tileVisible:!!tile&&tile.getBoundingClientRect().height>50,navTouchHeight:document.querySelector('.nav-item')?.getBoundingClientRect().height||0};});
+  assert(mobilePresentation.navVisible,'Mobile primary navigation must remain visible');
+  assert.equal(mobilePresentation.navScroll,'auto','Mobile navigation should scroll within its own row');
+  assert.equal(mobilePresentation.metricColumns,2,'Mobile KPI layout should use two accessible columns');
+  assert(mobilePresentation.tileVisible,'Overview KPI tiles must remain readable');
+  assert(mobilePresentation.navTouchHeight>=40,'Mobile navigation touch target too small');
   await page.locator('#logout').click();await page.locator('#loginSection').waitFor({state:'visible'});assert.equal(await page.locator('#nativeTrend svg').count(),0,'Logout must remove monitored trend');assert.equal(await page.locator('#nativeHealthy').textContent(),'—','Logout must clear previous healthy counts');assert.equal(await page.locator('#enterpriseDomains img').count(),0);assert.equal(await page.locator('#enterpriseDesignList').textContent(),'');assert((await page.locator('#enterprisePacketStatus').textContent()).includes('No packet'));assert.equal(errors.length,0,errors.join('|'));
-  console.log('PASS: all 11 routes, fail-closed on 503/stale/collector-error, disabled traceroute, preserved controls, safe import/search/explanation, design, mobile layout, logout and zero JS errors');console.log('SYNTHETIC SCREENSHOTS '+screenshots);
+  console.log('PASS: all 11 routes, fail-closed on 503/stale/collector-error, disabled traceroute, preserved controls, safe import/search/explanation, design, accessible mobile navigation/KPIs, logout and zero JS errors');console.log('SYNTHETIC SCREENSHOTS '+screenshots);
  }finally{await browser.close();}
 }
 main().catch(e=>{console.error(e.stack);process.exitCode=1;}).finally(()=>py.kill('SIGTERM'));
