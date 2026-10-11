@@ -62,8 +62,10 @@ function renderStatus(s,qa){
  put("nativeServices",services.length);put("nativeHealthy",healthy);put("nativeDegraded",unhealthy);
  put("nativeLatency",Math.round(avg)+" ms");
  put("nativeFreshness",s.last_check?"Latest check: "+when(s.last_check):"No successful monitoring cycle yet");
- const badge=q("nativeLiveBadge");badge.textContent=s.mode==="live"?"LIVE MEASUREMENTS":"MONITORING STATUS UNKNOWN";
- badge.className="v79-chip "+(s.mode==="live"?"v79-chip-ok":"v79-chip-warn");
+ const badge=q("nativeLiveBadge");
+ const observed=s.mode==="live"&&services.length>0&&Boolean(s.last_check);
+ badge.textContent=observed?"LIVE MEASUREMENTS":"MONITORING STATUS UNVERIFIED";
+ badge.className="v79-chip "+(observed?"v79-chip-ok":"v79-chip-warn");
  const table=clear("nativeServiceRows");
  for(const service of services){
   const d=[service.http?"HTTP "+service.http:"No HTTP sample",service.ms!=null?service.ms+" ms":"Latency unavailable",
@@ -79,9 +81,11 @@ function renderStatus(s,qa){
  const lab=s.lab||{};
  put("nativeDell",lab.status?String(lab.status).toUpperCase():"NOT VERIFIED");
  put("nativeDellDetail",[lab.ip||"No lab IP",lab.rtt_ms!=null?lab.rtt_ms+" ms":"No RTT",lab.ssh||"SSH not assessed"].join(" · "));
- put("nativeInsight",unhealthy?
-  unhealthy+" applications require review. Verify current measurements and error messages before declaring an incident.":
-  "All "+healthy+" checked public services responded normally in the latest monitoring cycle. This does not certify authenticated application workflows.");
+ put("nativeInsight",!services.length?
+  "No public-service measurements available. Do not assume services are healthy.":
+  unhealthy?
+    unhealthy+" applications require review. Verify current measurements and error messages before declaring an incident.":
+    "All "+healthy+" checked public services responded normally in the latest monitoring cycle. This does not certify authenticated application workflows.");
  renderQA(qa);
 }
 function renderQA(qa){
@@ -167,6 +171,13 @@ async function importFile(event){
  }catch(error){put("netpulseImportStatus","Import rejected: "+error.message);}
  finally{event.target.value="";}
 }
+function markLiveEvidenceUnavailable(){
+ for(const id of ["nativeServices","nativeHealthy","nativeDegraded","nativeLatency","nativeDell"])put(id,"—");
+ for(const id of ["nativeServiceRows","nativeTrend","nativeActivity","nativeQA","netpulseNicRows"])clear(id);
+ for(const id of ["nativeFreshness","nativeQaRun","nativeQaSummary","nativeDellDetail","netpulseNicSource"])put(id,"Current evidence unavailable");
+ put("nativeInsight","The latest measurements could not be verified. Do not infer that services are healthy.");
+ const badge=q("nativeLiveBadge");badge.textContent="MONITORING STATUS UNVERIFIED";badge.className="v79-chip v79-chip-warn";
+}
 async function refresh(){
  if(!active||inflight)return;inflight=true;const refreshGeneration=generation;
  try{
@@ -179,7 +190,9 @@ async function refresh(){
   renderStatus(status,qa);renderNics(nics);
   put("nativeDataError","");
  }catch(e){
-  put("nativeDataError","Live measurements temporarily unavailable. Monitoring continues independently; no simulated values substituted.");
+  if(!active||refreshGeneration!==generation)return;
+  markLiveEvidenceUnavailable();
+  put("nativeDataError","Latest measurements unavailable. Existing values have been cleared; no simulated values substituted.");
   if(e.status===401)stop();
  }finally{inflight=false;}
 }
