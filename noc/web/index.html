@@ -26,10 +26,10 @@
     <section id="appSection" hidden>
       <div class="notice"><strong>Sentinel unified operator view:</strong> Mission Control shows real read-only public-service monitoring and limited public-page browser QA. Other multi-customer NOC inventory and incident data are simulated. No Tiquet tickets are sent.</div>
       <section id="missionControlPanel" class="v79-dashboard" aria-label="Mission Control overview">
-        <div class="v79-hero">
-          <div class="v79-hero-copy"><p class="eyebrow">MISSION CONTROL · SENTINEL LIVE OBSERVABILITY</p>
-            <h2>Know what is working.<br><span>See what needs attention.</span></h2>
-            <p>Real service measurements, browser quality, network evidence and supervised incident operations—one unified workspace.</p>
+        <div class="v79-hero v79-ops-header">
+          <div class="v79-hero-copy"><p class="eyebrow">V79 SENTINEL · OBSERVED SERVICE OPERATIONS</p>
+            <h2>Service operations <span>at a glance.</span></h2>
+            <p>Current public HTTP observations, measured response trends and clearly dated investigation evidence.</p>
             <div class="v79-hero-actions"><span id="nativeLiveBadge" class="v79-chip">CONNECTING</span><span id="nativeFreshness" class="v79-freshness">Loading latest telemetry…</span><button id="nativeRefresh" type="button" class="secondary">↻ Refresh data</button></div>
           </div>
           <div class="v79-hero-visual" role="img" aria-label="Network observation visual: connected services and central Sentinel shield">
@@ -48,16 +48,16 @@
           <article class="v79-stat"><div class="v79-stat-icon sky">↗</div><span>Average response</span><strong id="nativeLatency">—</strong><small>Observed HTTP timings</small></article>
         </div>
         <p id="nativeDataError" class="v79-warning" role="status"></p>
-        <div class="v79-grid-two">
+        <div class="v79-grid-two v79-service-evidence-grid">
           <section class="v79-pane"><div class="v79-pane-header"><div><p class="eyebrow">SERVICE ASSURANCE</p><h3>Application health</h3></div><span class="v79-chip">HTTP · TLS</span></div><div id="nativeServiceRows" class="v79-dense-list" aria-live="polite"></div></section>
           <section class="v79-pane"><div class="v79-pane-header"><div><p class="eyebrow">REAL MONITORING EVIDENCE</p><h3>24-hour response trend</h3></div><span class="v79-chip">MEASURED</span></div><div class="v79-chart-container" id="nativeTrend" aria-label="Measured response-time chart"></div><p class="v79-pane-note">Measured HTTP response times—not end-user page speed or bandwidth.</p>
             <div class="v79-insight"><strong>◈ Sentinel insight</strong><p id="nativeInsight">Waiting for the next monitoring cycle.</p></div>
-            <div class="v79-lab"><strong>Local Dell pilot link</strong><span id="nativeDell">—</span><small id="nativeDellDetail">Not measured yet</small></div>
+            <div class="v79-lab"><strong>Local Dell pilot link</strong><span id="nativeDell">—</span><small id="nativeDellDetail">Not measured yet</small><small class="v79-source-disclaimer">Independent monitor report. Missing RTT or an untested SSH check alone does not confirm an outage.</small></div>
           </section>
         </div>
-        <div class="v79-grid-two">
-          <section class="v79-pane"><div class="v79-pane-header"><div><p class="eyebrow">EVIDENCE TIMELINE</p><h3>Recent network activity</h3></div><span class="v79-chip">LOCAL</span></div><div class="v79-dense-list" id="nativeActivity"></div></section>
-          <section class="v79-pane"><div class="v79-pane-header"><div><p class="eyebrow">AUTOMATED PUBLIC PAGE QA</p><h3>Browser quality checks</h3></div><span class="v79-chip">MOBILE + DESKTOP</span></div><p class="v79-pane-note" id="nativeQaRun">Awaiting browser QA results</p><strong id="nativeQaSummary">—</strong>
+        <div class="v79-grid-two v79-activity-evidence-grid">
+          <section class="v79-pane"><div class="v79-pane-header"><div><p class="eyebrow">HISTORICAL EVENT LOG</p><h3>Recorded status changes</h3></div><span class="v79-chip">DATED EVENTS</span></div><p class="v79-pane-note">Past monitoring transitions. These are not necessarily current active incidents.</p><div class="v79-dense-list" id="nativeActivity"></div></section>
+          <section class="v79-pane"><div class="v79-pane-header"><div><p class="eyebrow">HISTORICAL BROWSER EVIDENCE</p><h3>Browser quality checks</h3></div><span class="v79-chip">MOBILE + DESKTOP</span></div><p class="v79-pane-note" id="nativeQaRun">Awaiting browser QA results</p><strong id="nativeQaSummary">—</strong>
             <div class="v79-table-scroll"><table class="v79-table"><thead><tr><th>Application</th><th>Viewport</th><th>HTTP</th><th>Load</th><th>Status</th><th>Evidence</th></tr></thead><tbody id="nativeQA"></tbody></table></div><p class="v79-pane-note">QA checks public pages. Authenticated business workflows require separate supervised tests.</p>
             <a class="v79-text-link" href="/mission-control/api/report.csv" download="sentinel-public-monitoring.csv">↓ Download original monitoring CSV</a>
           </section>
