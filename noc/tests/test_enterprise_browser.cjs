@@ -10,14 +10,18 @@ async function main(){
  const browser=await chromium.launch({executablePath:process.env.SENTINEL_CHROME_PATH||'/usr/bin/google-chrome',headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1050}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.route('**/mission-control/api/status',r=>r.fulfill({json:{mode:'live',last_check:new Date().toISOString(),services:[{name:'Fixture website',status:'up',http:200,ms:123}],trend:[{ms:123},{ms:145}],history:[]}}));
-  await page.route('**/mission-control/api/qa/latest',r=>r.fulfill({json:{results:[]}}));
+  await page.route('**/mission-control/api/status',r=>r.fulfill({json:{mode:'live',last_check:new Date().toISOString(),services:[{name:'Fixture website',status:'up',http:200,ms:123},{name:'Fixture hub',status:'up',http:200,ms:145},{name:'Fixture tickets',status:'up',http:200,ms:118},{name:'Fixture academy',status:'up',http:200,ms:121}],trend:[{ms:123},{ms:145},{ms:118},{ms:121}],history:[{name:'Fixture website',when:new Date(Date.now()-40*60*1000).toISOString(),status:'up',message:'Synthetic recovery event'}],lab:{status:'offline',ip:'192.0.2.50',rtt_ms:null,ssh:'not tested'}}}));
+  await page.route('**/mission-control/api/qa/latest',r=>r.fulfill({json:{runId:'synthetic_qa_older',at:new Date(Date.now()-48*60*60*1000).toISOString(),results:[{name:'Fixture website',viewport:'desktop',http:200,navigateMs:185,status:'pass'}]}}));
   await page.route('**/api/v1/network/capabilities',r=>r.fulfill({json:{captureReason:'Synthetic operator QA: no live capture',targets:[{name:'Hub',host:'example.org',port:443}],traceroute:false}}));
   await page.route('**/api/v1/network/diagnostic',r=>r.fulfill({json:{target:'Synthetic fixture',at:'Test time',note:'No network probe performed',resolutionMs:0,results:[]}}));
   await page.goto('http://127.0.0.1:'+port,{waitUntil:'domcontentloaded'});
   assert(await page.locator('#loginSection').isVisible());
   await page.locator('#username').fill('mission-admin');await page.locator('#password').fill('synthetic-long-private-operator-password');await page.locator('#loginForm button').click();await page.locator('#appSection').waitFor({state:'visible'});
-  await page.locator('#nativeServices').getByText('1',{exact:true}).waitFor();assert(await page.locator('#nativeTrend svg').isVisible());assert.equal(await page.locator('iframe').count(),0);
+  await page.locator('#nativeServices').getByText('4',{exact:true}).waitFor();assert(await page.locator('#nativeTrend svg').isVisible());assert.equal(await page.locator('iframe').count(),0);
+  await page.getByText('HISTORICAL QA · NOT CURRENT HEALTH',{exact:false}).waitFor();
+  assert.equal(await page.locator('#nativeQaRun').getAttribute('data-qa-freshness'),'historical','Two-day-old QA must not be presented as current');
+  assert.equal(await page.locator('#nativeDell').textContent(),'MONITOR REPORT: OFFLINE','Ambiguous pilot status must be qualified as monitor report');
+  assert((await page.locator('.v79-source-disclaimer').textContent()).includes('does not confirm an outage'),'Untested pilot link needs evidence caveat');
   const failingStatus=r=>r.fulfill({status:503,json:{error:'synthetic unavailable'}});
   await page.route('**/mission-control/api/status',failingStatus);
   await page.locator('#nativeRefresh').click();
@@ -27,7 +31,7 @@ async function main(){
   assert.equal(await page.locator('#nativeTrend svg').count(),0,'Old trend must be cleared');
   await page.unroute('**/mission-control/api/status',failingStatus);
   await page.locator('#nativeRefresh').click();
-  await page.locator('#nativeServices').getByText('1',{exact:true}).waitFor();
+  await page.locator('#nativeServices').getByText('4',{exact:true}).waitFor();
   const staleStatus=r=>r.fulfill({json:{mode:'live',last_check:new Date(Date.now()-60*60*1000).toISOString(),services:[{name:'Stale website',status:'up',http:200,ms:12}],trend:[{ms:12}],history:[]}});
   await page.route('**/mission-control/api/status',staleStatus);
   await page.locator('#nativeRefresh').click();
@@ -37,7 +41,7 @@ async function main(){
   assert.equal(await page.locator('#nativeTrend svg').count(),0,'Stale chart must be cleared');
   await page.unroute('**/mission-control/api/status',staleStatus);
   await page.locator('#nativeRefresh').click();
-  await page.locator('#nativeServices').getByText('1',{exact:true}).waitFor();
+  await page.locator('#nativeServices').getByText('4',{exact:true}).waitFor();
   const degradedStatus=r=>r.fulfill({json:{mode:'live',error:'Synthetic collector exception',last_check:new Date().toISOString(),services:[{name:'Fixture website',status:'up',http:200,ms:123}],trend:[],history:[]}});
   await page.route('**/mission-control/api/status',degradedStatus);
   await page.locator('#nativeRefresh').click();
@@ -45,7 +49,7 @@ async function main(){
   assert.equal(await page.locator('#nativeServices').textContent(),'—','Monitoring failure cannot retain a healthy count');
   await page.unroute('**/mission-control/api/status',degradedStatus);
   await page.locator('#nativeRefresh').click();
-  await page.locator('#nativeServices').getByText('1',{exact:true}).waitFor();
+  await page.locator('#nativeServices').getByText('4',{exact:true}).waitFor();
   for(const route of ['devices','map','activity','alerts','diagnostics','design','customers','reports','settings','packets','overview']){await page.locator('.nav-item[data-page="'+route+'"]').click();await page.waitForFunction(key=>document.querySelector('.nav-item[aria-current="page"]')?.dataset.page===key,route);assert.equal(await page.locator('#enterprisePageTitle').textContent(),Object.entries({devices:'Devices',map:'Network Map',activity:'Web & App Activity',alerts:'Alerts & approvals',diagnostics:'Diagnostics',design:'Network Design',customers:'Managed customers',reports:'Reports & history',settings:'Sensors & security',packets:'Packet Explorer',overview:'Overview'}).find(x=>x[0]===route)[1]);}
   await page.locator('.nav-item[data-page="diagnostics"]').click();
   await page.locator('#enterpriseTCP').click();
@@ -86,6 +90,17 @@ async function main(){
   assert(desktopFold.statsBottom<790,'All four KPI cards should appear in the first desktop viewport');
   assert(desktopFold.servicesTop<900&&desktopFold.chartTop<900,'Service health and response chart should start in the first desktop viewport');
   assert(desktopFold.badgeHeight>22&&desktopFold.refreshHeight>20,'Live evidence provenance and refresh control must stay present');
+  const opsLayout=await page.evaluate(()=>({
+    heroVisualHidden:getComputedStyle(document.querySelector('.v79-ops-header .v79-hero-visual')).display==='none',
+    serviceColumns:getComputedStyle(document.querySelector('#nativeServiceRows')).gridTemplateColumns.split(' ').length,
+    serviceCards:document.querySelectorAll('#nativeServiceRows .v79-row').length,
+    timelineNodes:document.querySelectorAll('#nativeActivity .v79-row').length,
+    gridTag:document.querySelector('.v79-service-evidence-grid')!==null
+  }));
+  assert(opsLayout.heroVisualHidden,'Decorative shield should not occupy the new operations status header');
+  assert(opsLayout.gridTag&&opsLayout.serviceColumns===2&&opsLayout.serviceCards===4,'Desktop service-health matrix must render four real source-backed synthetic fixture tiles');
+  assert(opsLayout.timelineNodes===1,'Synthetic historical event must stay visible');
+
   const desktopSidebar=await page.locator('.sidebar').evaluate(e=>({top:e.getBoundingClientRect().top,position:getComputedStyle(e).position,height:e.getBoundingClientRect().height}));
   assert(Math.abs(desktopSidebar.top)<=1,'Desktop primary sidebar should appear at top of first viewport');
   assert.equal(desktopSidebar.position,'sticky','Desktop primary sidebar must remain sticky');
@@ -101,6 +116,8 @@ async function main(){
   });
   assert(mobileControls.heroHeight>150&&mobileControls.heroHeight<400,'Mobile Overview must stay compact and readable');
   assert(mobileControls.badgeHeight>22&&mobileControls.refreshHeight>20,'Mobile refresh and monitoring provenance must remain visible');
+  assert.equal(await page.locator('#nativeServiceRows').evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),1,'Mobile service matrix must fit one column');
+  assert.equal(await page.locator('#nativeQaRun').getAttribute('data-qa-freshness'),'historical','Historical QA provenance must remain visible on mobile');
   await page.screenshot({path:path.join(screenshots,'enterprise-mobile.png'),fullPage:true});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'Mobile document must not overflow');
   await captureRoute('map','enterprise-network-map-mobile.png');
@@ -113,7 +130,7 @@ async function main(){
   assert(mobilePresentation.tileVisible,'Overview KPI tiles must remain readable');
   assert(mobilePresentation.navTouchHeight>=40,'Mobile navigation touch target too small');
   await page.locator('#logout').click();await page.locator('#loginSection').waitFor({state:'visible'});assert.equal(await page.locator('#nativeTrend svg').count(),0,'Logout must remove monitored trend');assert.equal(await page.locator('#nativeHealthy').textContent(),'—','Logout must clear previous healthy counts');assert.equal(await page.locator('#enterpriseDomains img').count(),0);assert.equal(await page.locator('#enterpriseDesignList').textContent(),'');assert((await page.locator('#enterprisePacketStatus').textContent()).includes('No packet'));assert.equal(errors.length,0,errors.join('|'));
-  console.log('PASS: all 11 routes, stale/503/collector-error fail-closed, protected diagnostics, safe NetPulse import, top-anchored desktop navigation, routed-page footer order, compact desktop/mobile Overview with visible KPI/monitoring controls, disabled-control contrast and 9 synthetic desktop/mobile screenshots, logout and zero JS errors');console.log('SYNTHETIC SCREENSHOTS '+screenshots);
+  console.log('PASS: all 11 routes, stale/503/collector-error fail-closed, protected diagnostics, safe NetPulse import, top-anchored desktop navigation, routed-page footer order, operations status header, four-card service matrix, historical QA and Dell provenance, mobile-safe view, disabled-control contrast and 9 synthetic desktop/mobile screenshots, logout and zero JS errors');console.log('SYNTHETIC SCREENSHOTS '+screenshots);
  }finally{await browser.close();}
 }
 main().catch(e=>{console.error(e.stack);process.exitCode=1;}).finally(()=>py.kill('SIGTERM'));
