@@ -76,6 +76,16 @@ async function main(){
   const disabledOpacity=await page.locator('#enterpriseTrace').evaluate(e=>Number(getComputedStyle(e).opacity));
   assert(disabledOpacity<0.8,'Disabled traceroute must appear visually unavailable');
   await captureRoute('overview','enterprise-desktop-viewport.png');
+  const desktopFold=await page.evaluate(()=>{
+   const rect=s=>document.querySelector(s)?.getBoundingClientRect();
+   const hero=rect('#missionControlPanel .v79-hero'),stats=rect('#missionControlPanel .v79-stats'),services=rect('#nativeServiceRows'),chart=rect('#nativeTrend');
+   const badge=rect('#nativeLiveBadge'),refresh=rect('#nativeRefresh');
+   return {heroHeight:hero?.height||0,statsBottom:stats?.bottom||9999,servicesTop:services?.top||9999,chartTop:chart?.top||9999,badgeHeight:badge?.height||0,refreshHeight:refresh?.height||0};
+  });
+  assert(desktopFold.heroHeight>110&&desktopFold.heroHeight<=220,'Operations-first desktop hero must be compact but retain its content');
+  assert(desktopFold.statsBottom<790,'All four KPI cards should appear in the first desktop viewport');
+  assert(desktopFold.servicesTop<900&&desktopFold.chartTop<900,'Service health and response chart should start in the first desktop viewport');
+  assert(desktopFold.badgeHeight>22&&desktopFold.refreshHeight>20,'Live evidence provenance and refresh control must stay present');
   const desktopSidebar=await page.locator('.sidebar').evaluate(e=>({top:e.getBoundingClientRect().top,position:getComputedStyle(e).position,height:e.getBoundingClientRect().height}));
   assert(Math.abs(desktopSidebar.top)<=1,'Desktop primary sidebar should appear at top of first viewport');
   assert.equal(desktopSidebar.position,'sticky','Desktop primary sidebar must remain sticky');
@@ -83,6 +93,14 @@ async function main(){
   await page.screenshot({path:path.join(screenshots,'enterprise-desktop.png'),fullPage:true});
   await page.setViewportSize({width:390,height:844});
   await captureRoute('overview','enterprise-mobile-viewport.png');
+  const mobileControls=await page.evaluate(()=>{
+   const hero=document.querySelector('#missionControlPanel .v79-hero')?.getBoundingClientRect();
+   const badge=document.querySelector('#nativeLiveBadge')?.getBoundingClientRect();
+   const refresh=document.querySelector('#nativeRefresh')?.getBoundingClientRect();
+   return {heroHeight:hero?.height||0,badgeHeight:badge?.height||0,refreshHeight:refresh?.height||0};
+  });
+  assert(mobileControls.heroHeight>150&&mobileControls.heroHeight<400,'Mobile Overview must stay compact and readable');
+  assert(mobileControls.badgeHeight>22&&mobileControls.refreshHeight>20,'Mobile refresh and monitoring provenance must remain visible');
   await page.screenshot({path:path.join(screenshots,'enterprise-mobile.png'),fullPage:true});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'Mobile document must not overflow');
   await captureRoute('map','enterprise-network-map-mobile.png');
@@ -95,7 +113,7 @@ async function main(){
   assert(mobilePresentation.tileVisible,'Overview KPI tiles must remain readable');
   assert(mobilePresentation.navTouchHeight>=40,'Mobile navigation touch target too small');
   await page.locator('#logout').click();await page.locator('#loginSection').waitFor({state:'visible'});assert.equal(await page.locator('#nativeTrend svg').count(),0,'Logout must remove monitored trend');assert.equal(await page.locator('#nativeHealthy').textContent(),'—','Logout must clear previous healthy counts');assert.equal(await page.locator('#enterpriseDomains img').count(),0);assert.equal(await page.locator('#enterpriseDesignList').textContent(),'');assert((await page.locator('#enterprisePacketStatus').textContent()).includes('No packet'));assert.equal(errors.length,0,errors.join('|'));
-  console.log('PASS: all 11 routes, stale/503/collector-error fail-closed, protected diagnostics, safe NetPulse import, top-anchored desktop navigation, routed-page footer order, disabled-control contrast and 9 synthetic desktop/mobile screenshots, logout and zero JS errors');console.log('SYNTHETIC SCREENSHOTS '+screenshots);
+  console.log('PASS: all 11 routes, stale/503/collector-error fail-closed, protected diagnostics, safe NetPulse import, top-anchored desktop navigation, routed-page footer order, compact desktop/mobile Overview with visible KPI/monitoring controls, disabled-control contrast and 9 synthetic desktop/mobile screenshots, logout and zero JS errors');console.log('SYNTHETIC SCREENSHOTS '+screenshots);
  }finally{await browser.close();}
 }
 main().catch(e=>{console.error(e.stack);process.exitCode=1;}).finally(()=>py.kill('SIGTERM'));
