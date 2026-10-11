@@ -478,20 +478,6 @@ button:disabled,
 
 /* G2.21 screenshot review corrections: balance source-backed matrix with chart,
    and keep operational status visible quickly on small screens. */
-@media(min-width:1181px){
-  #missionControlPanel .v79-grid-two.v79-service-evidence-grid{
-    align-items:stretch;
-  }
-  #missionControlPanel .v79-service-evidence-grid>.v79-pane:first-child{
-    display:flex;
-    flex-direction:column;
-  }
-  #nativeServiceRows.v79-dense-list{
-    flex:1;
-    grid-auto-rows:minmax(112px,1fr);
-    align-content:stretch;
-  }
-}
 @media(max-width:540px){
   .sidebar{padding:8px 12px 7px}
   .sidebar .logo{padding:1px 3px 5px}
