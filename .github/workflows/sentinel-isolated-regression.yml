@@ -2,7 +2,7 @@ name: Sentinel isolated regression
 
 on:
   pull_request:
-    branches: [main, fix/g218-native-command-center-evidence-20261011, feature/g219-native-command-center-polish-20261011]
+    branches: [main, fix/g218-native-command-center-evidence-20261011, feature/g219-native-command-center-polish-20261011, feature/g220-operations-first-compact-overview-20261011]
   push:
     branches: [main]
 
