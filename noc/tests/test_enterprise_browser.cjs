@@ -10,7 +10,7 @@ async function main(){
  const browser=await chromium.launch({executablePath:process.env.SENTINEL_CHROME_PATH||'/usr/bin/google-chrome',headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1050}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.route('**/mission-control/api/status',r=>r.fulfill({json:{mode:'live',last_check:'2026-10-10T20:00:00Z',services:[{name:'Fixture website',status:'up',http:200,ms:123}],trend:[{ms:123},{ms:145}],history:[]}}));
+  await page.route('**/mission-control/api/status',r=>r.fulfill({json:{mode:'live',last_check:new Date().toISOString(),services:[{name:'Fixture website',status:'up',http:200,ms:123}],trend:[{ms:123},{ms:145}],history:[]}}));
   await page.route('**/mission-control/api/qa/latest',r=>r.fulfill({json:{results:[]}}));
   await page.route('**/api/v1/network/capabilities',r=>r.fulfill({json:{captureReason:'Synthetic operator QA: no live capture',targets:[{name:'Hub',host:'example.org',port:443}],traceroute:false}}));
   await page.route('**/api/v1/network/diagnostic',r=>r.fulfill({json:{target:'Synthetic fixture',at:'Test time',note:'No network probe performed',resolutionMs:0,results:[]}}));
@@ -28,6 +28,24 @@ async function main(){
   await page.unroute('**/mission-control/api/status',failingStatus);
   await page.locator('#nativeRefresh').click();
   await page.locator('#nativeServices').getByText('1',{exact:true}).waitFor();
+  const staleStatus=r=>r.fulfill({json:{mode:'live',last_check:new Date(Date.now()-60*60*1000).toISOString(),services:[{name:'Stale website',status:'up',http:200,ms:12}],trend:[{ms:12}],history:[]}});
+  await page.route('**/mission-control/api/status',staleStatus);
+  await page.locator('#nativeRefresh').click();
+  await page.getByText('Monitoring evidence is missing, stale or degraded.',{exact:false}).waitFor();
+  assert.equal(await page.locator('#nativeServices').textContent(),'—','Stale monitoring counts must not be displayed');
+  assert.equal(await page.locator('#nativeLiveBadge').textContent(),'MONITORING STATUS UNVERIFIED');
+  assert.equal(await page.locator('#nativeTrend svg').count(),0,'Stale chart must be cleared');
+  await page.unroute('**/mission-control/api/status',staleStatus);
+  await page.locator('#nativeRefresh').click();
+  await page.locator('#nativeServices').getByText('1',{exact:true}).waitFor();
+  const degradedStatus=r=>r.fulfill({json:{mode:'live',error:'Synthetic collector exception',last_check:new Date().toISOString(),services:[{name:'Fixture website',status:'up',http:200,ms:123}],trend:[],history:[]}});
+  await page.route('**/mission-control/api/status',degradedStatus);
+  await page.locator('#nativeRefresh').click();
+  await page.getByText('MONITORING STATUS UNVERIFIED',{exact:true}).waitFor();
+  assert.equal(await page.locator('#nativeServices').textContent(),'—','Monitoring failure cannot retain a healthy count');
+  await page.unroute('**/mission-control/api/status',degradedStatus);
+  await page.locator('#nativeRefresh').click();
+  await page.locator('#nativeServices').getByText('1',{exact:true}).waitFor();
   for(const route of ['devices','map','activity','alerts','diagnostics','design','customers','reports','settings','packets','overview']){await page.locator('.nav-item[data-page="'+route+'"]').click();await page.waitForFunction(key=>document.querySelector('.nav-item[aria-current="page"]')?.dataset.page===key,route);assert.equal(await page.locator('#enterprisePageTitle').textContent(),Object.entries({devices:'Devices',map:'Network Map',activity:'Web & App Activity',alerts:'Alerts & approvals',diagnostics:'Diagnostics',design:'Network Design',customers:'Managed customers',reports:'Reports & history',settings:'Sensors & security',packets:'Packet Explorer',overview:'Overview'}).find(x=>x[0]===route)[1]);}
   await page.locator('.nav-item[data-page="diagnostics"]').click();
   await page.locator('#enterpriseTCP').click();
@@ -41,8 +59,8 @@ async function main(){
   await page.locator('.nav-item[data-page="settings"]').click();await page.locator('#securityPanel').waitFor({state:'visible'});assert(await page.locator('#securityPanel').isVisible());assert(await page.locator('#operatorTools').isVisible());
   await page.locator('.nav-item[data-page="overview"]').click();await page.locator('#missionControlPanel').waitFor({state:'visible'});const screenshots=process.env.SENTINEL_QA_SCREENSHOTS_DIR||tmp;fs.mkdirSync(screenshots,{recursive:true});await page.screenshot({path:path.join(screenshots,'enterprise-desktop.png'),fullPage:true});
   await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(screenshots,'enterprise-mobile.png'),fullPage:true});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'Mobile document must not overflow');
-  await page.locator('#logout').click();await page.locator('#loginSection').waitFor({state:'visible'});assert.equal(await page.locator('#enterpriseDomains img').count(),0);assert.equal(await page.locator('#enterpriseDesignList').textContent(),'');assert((await page.locator('#enterprisePacketStatus').textContent()).includes('No packet'));assert.equal(errors.length,0,errors.join('|'));
-  console.log('PASS: all 11 routes, fail-closed chart evidence, disabled traceroute, preserved controls, safe import/search/explanation, design, mobile layout, logout and zero JS errors');console.log('SYNTHETIC SCREENSHOTS '+screenshots);
+  await page.locator('#logout').click();await page.locator('#loginSection').waitFor({state:'visible'});assert.equal(await page.locator('#nativeTrend svg').count(),0,'Logout must remove monitored trend');assert.equal(await page.locator('#nativeHealthy').textContent(),'—','Logout must clear previous healthy counts');assert.equal(await page.locator('#enterpriseDomains img').count(),0);assert.equal(await page.locator('#enterpriseDesignList').textContent(),'');assert((await page.locator('#enterprisePacketStatus').textContent()).includes('No packet'));assert.equal(errors.length,0,errors.join('|'));
+  console.log('PASS: all 11 routes, fail-closed on 503/stale/collector-error, disabled traceroute, preserved controls, safe import/search/explanation, design, mobile layout, logout and zero JS errors');console.log('SYNTHETIC SCREENSHOTS '+screenshots);
  }finally{await browser.close();}
 }
 main().catch(e=>{console.error(e.stack);process.exitCode=1;}).finally(()=>py.kill('SIGTERM'));
