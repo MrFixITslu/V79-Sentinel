@@ -64,6 +64,7 @@ async function main(){
    await page.waitForFunction(key=>document.querySelector('.nav-item[aria-current="page"]')?.dataset.page===key,route);
    await page.evaluate(()=>window.scrollTo({top:0,left:0,behavior:'instant'}));
    await page.waitForFunction(()=>window.scrollY===0);
+   assert(await page.evaluate(()=>document.querySelector('#appSection')?.lastElementChild?.tagName==='FOOTER'),'Shared application footer must follow every dynamic page');
    assert(await page.locator('.sidebar .nav').isVisible(),'Primary navigation missing on '+route);
    assert.equal(await page.locator('.nav-item[aria-current="page"]').count(),1,'One active navigation item expected');
    await page.screenshot({path:path.join(screenshots,filename)});
@@ -71,6 +72,9 @@ async function main(){
   await captureRoute('map','enterprise-network-map-desktop.png');
   await captureRoute('packets','enterprise-packet-explorer-desktop.png');
   await captureRoute('diagnostics','enterprise-diagnostics-desktop.png');
+  assert(await page.locator('#enterpriseTrace').isDisabled(),'Traceroute unavailable by capability must stay disabled');
+  const disabledOpacity=await page.locator('#enterpriseTrace').evaluate(e=>Number(getComputedStyle(e).opacity));
+  assert(disabledOpacity<0.8,'Disabled traceroute must appear visually unavailable');
   await captureRoute('overview','enterprise-desktop-viewport.png');
   const desktopSidebar=await page.locator('.sidebar').evaluate(e=>({top:e.getBoundingClientRect().top,position:getComputedStyle(e).position,height:e.getBoundingClientRect().height}));
   assert(Math.abs(desktopSidebar.top)<=1,'Desktop primary sidebar should appear at top of first viewport');
@@ -91,7 +95,7 @@ async function main(){
   assert(mobilePresentation.tileVisible,'Overview KPI tiles must remain readable');
   assert(mobilePresentation.navTouchHeight>=40,'Mobile navigation touch target too small');
   await page.locator('#logout').click();await page.locator('#loginSection').waitFor({state:'visible'});assert.equal(await page.locator('#nativeTrend svg').count(),0,'Logout must remove monitored trend');assert.equal(await page.locator('#nativeHealthy').textContent(),'—','Logout must clear previous healthy counts');assert.equal(await page.locator('#enterpriseDomains img').count(),0);assert.equal(await page.locator('#enterpriseDesignList').textContent(),'');assert((await page.locator('#enterprisePacketStatus').textContent()).includes('No packet'));assert.equal(errors.length,0,errors.join('|'));
-  console.log('PASS: all 11 routes, stale/503/collector-error fail-closed, protected diagnostics, safe NetPulse import, top-anchored desktop navigation and 8 synthetic desktop/mobile route screenshots, logout and zero JS errors');console.log('SYNTHETIC SCREENSHOTS '+screenshots);
+  console.log('PASS: all 11 routes, stale/503/collector-error fail-closed, protected diagnostics, safe NetPulse import, top-anchored desktop navigation, routed-page footer order, disabled-control contrast and 9 synthetic desktop/mobile screenshots, logout and zero JS errors');console.log('SYNTHETIC SCREENSHOTS '+screenshots);
  }finally{await browser.close();}
 }
 main().catch(e=>{console.error(e.stack);process.exitCode=1;}).finally(()=>py.kill('SIGTERM'));
