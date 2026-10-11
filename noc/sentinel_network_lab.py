@@ -38,7 +38,7 @@ def capabilities():
     return {"source":"Acer local tools","targets":[{"name":k,"host":v[0],"port":v[1]} for k,v in TARGETS.items()],
             "tcp":True,"traceroute":bool(shutil.which("traceroute")),
             "capture":False,"pcapImport":False,
-            "captureReason":"Native capture bridge is not enabled. Wireshark dumpcap/tshark are not installed on this Acer; no capture privilege has been added.",
+            "captureReason":"Native capture bridge is not enabled in Sentinel NOC. Host tool availability does not grant packet-capture privileges to this application.",
             "retention":"Neighbor observations are read-only; imported investigation data stays in browser memory."}
 def diagnostic(data):
     if not isinstance(data,dict) or set(data)!={"target","kind"} or data.get("target") not in TARGETS or data.get("kind") not in ("tcp","route"):
