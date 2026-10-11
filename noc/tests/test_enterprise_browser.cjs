@@ -57,8 +57,33 @@ async function main(){
   await page.locator('.nav-item[data-page="design"]').click();await page.locator('#enterpriseDesignName').fill('Core Router');await page.locator('#enterpriseDesignKind').fill('Router');await page.getByRole('button',{name:'Add device',exact:true}).click();assert((await page.locator('#enterpriseDesignList').textContent()).includes('Core Router'));
   await page.locator('.nav-item[data-page="packets"]').click();await page.getByRole('button',{name:'Clear sensitive evidence',exact:true}).click();assert.equal(await page.locator('#enterpriseFlows').textContent(),'');assert(!(await page.locator('#enterpriseDomains').textContent()).includes('example.org'));assert.equal(await page.locator('#enterpriseExport').isDisabled(),true);await page.locator('#netpulseImport').setInputFiles({name:'fixture.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(investigation))});await page.locator('#enterprisePacketStatus').getByText(/2 frames/).waitFor();
   await page.locator('.nav-item[data-page="settings"]').click();await page.locator('#securityPanel').waitFor({state:'visible'});assert(await page.locator('#securityPanel').isVisible());assert(await page.locator('#operatorTools').isVisible());
-  await page.locator('.nav-item[data-page="overview"]').click();await page.locator('#missionControlPanel').waitFor({state:'visible'});const screenshots=process.env.SENTINEL_QA_SCREENSHOTS_DIR||tmp;fs.mkdirSync(screenshots,{recursive:true});await page.screenshot({path:path.join(screenshots,'enterprise-desktop.png'),fullPage:true});
-  await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(screenshots,'enterprise-mobile.png'),fullPage:true});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'Mobile document must not overflow');
+  const screenshots=process.env.SENTINEL_QA_SCREENSHOTS_DIR||tmp;
+  fs.mkdirSync(screenshots,{recursive:true});
+  const captureRoute=async(route,filename)=>{
+   await page.locator('.nav-item[data-page="'+route+'"]').click();
+   await page.waitForFunction(key=>document.querySelector('.nav-item[aria-current="page"]')?.dataset.page===key,route);
+   await page.evaluate(()=>window.scrollTo({top:0,left:0,behavior:'instant'}));
+   await page.waitForFunction(()=>window.scrollY===0);
+   assert(await page.locator('.sidebar .nav').isVisible(),'Primary navigation missing on '+route);
+   assert.equal(await page.locator('.nav-item[aria-current="page"]').count(),1,'One active navigation item expected');
+   await page.screenshot({path:path.join(screenshots,filename)});
+  };
+  await captureRoute('map','enterprise-network-map-desktop.png');
+  await captureRoute('packets','enterprise-packet-explorer-desktop.png');
+  await captureRoute('diagnostics','enterprise-diagnostics-desktop.png');
+  await captureRoute('overview','enterprise-desktop-viewport.png');
+  const desktopSidebar=await page.locator('.sidebar').evaluate(e=>({top:e.getBoundingClientRect().top,position:getComputedStyle(e).position,height:e.getBoundingClientRect().height}));
+  assert(Math.abs(desktopSidebar.top)<=1,'Desktop primary sidebar should appear at top of first viewport');
+  assert.equal(desktopSidebar.position,'sticky','Desktop primary sidebar must remain sticky');
+  assert(desktopSidebar.height>=800,'Desktop sidebar should occupy its visible viewport');
+  await page.screenshot({path:path.join(screenshots,'enterprise-desktop.png'),fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  await captureRoute('overview','enterprise-mobile-viewport.png');
+  await page.screenshot({path:path.join(screenshots,'enterprise-mobile.png'),fullPage:true});
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'Mobile document must not overflow');
+  await captureRoute('map','enterprise-network-map-mobile.png');
+  await captureRoute('packets','enterprise-packet-explorer-mobile.png');
+  await captureRoute('overview','enterprise-mobile-viewport.png');
   const mobilePresentation=await page.evaluate(()=>{const nav=document.querySelector('.sidebar .nav'),tile=document.querySelector('.v79-stat'),metrics=document.querySelector('.v79-stats');return {navVisible:!!nav&&nav.getBoundingClientRect().height>0,navScroll:getComputedStyle(nav).overflowX,metricColumns:getComputedStyle(metrics).gridTemplateColumns.split(' ').length,tileVisible:!!tile&&tile.getBoundingClientRect().height>50,navTouchHeight:document.querySelector('.nav-item')?.getBoundingClientRect().height||0};});
   assert(mobilePresentation.navVisible,'Mobile primary navigation must remain visible');
   assert.equal(mobilePresentation.navScroll,'auto','Mobile navigation should scroll within its own row');
@@ -66,7 +91,7 @@ async function main(){
   assert(mobilePresentation.tileVisible,'Overview KPI tiles must remain readable');
   assert(mobilePresentation.navTouchHeight>=40,'Mobile navigation touch target too small');
   await page.locator('#logout').click();await page.locator('#loginSection').waitFor({state:'visible'});assert.equal(await page.locator('#nativeTrend svg').count(),0,'Logout must remove monitored trend');assert.equal(await page.locator('#nativeHealthy').textContent(),'—','Logout must clear previous healthy counts');assert.equal(await page.locator('#enterpriseDomains img').count(),0);assert.equal(await page.locator('#enterpriseDesignList').textContent(),'');assert((await page.locator('#enterprisePacketStatus').textContent()).includes('No packet'));assert.equal(errors.length,0,errors.join('|'));
-  console.log('PASS: all 11 routes, fail-closed on 503/stale/collector-error, disabled traceroute, preserved controls, safe import/search/explanation, design, accessible mobile navigation/KPIs, logout and zero JS errors');console.log('SYNTHETIC SCREENSHOTS '+screenshots);
+  console.log('PASS: all 11 routes, stale/503/collector-error fail-closed, protected diagnostics, safe NetPulse import, top-anchored desktop navigation and 8 synthetic desktop/mobile route screenshots, logout and zero JS errors');console.log('SYNTHETIC SCREENSHOTS '+screenshots);
  }finally{await browser.close();}
 }
 main().catch(e=>{console.error(e.stack);process.exitCode=1;}).finally(()=>py.kill('SIGTERM'));
