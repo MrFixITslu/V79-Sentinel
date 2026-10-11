@@ -235,3 +235,20 @@ input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{
 @media(prefers-reduced-motion:reduce){
   .nav-item{transition:none}
 }
+
+/* G2.19: unavailable actions must not look enabled in the operator UI. */
+button:disabled,
+.enterprise-controls button:disabled{
+  opacity:.48;
+  cursor:not-allowed;
+  filter:saturate(.48);
+  box-shadow:none;
+}
+.enterprise-controls button:disabled:hover{filter:saturate(.48)}
+/* The footer belongs after the selected page, not between route panels. */
+#appSection > footer{
+  margin-top:20px;
+  padding-top:14px;
+  border-top:1px solid #263e54;
+  color:#91abc3;
+}
