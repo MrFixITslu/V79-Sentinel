@@ -1,22 +1,38 @@
 "use strict";
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawn}=require('node:child_process');
-const {chromium}=require('/home/firelion/V79-Sentinel/sentinel/qa/node_modules/playwright-core');
+const {chromium}=require('../../qa/node_modules/playwright-core');
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'sentinel-enterprise-test-'));
 const py=spawn('/usr/bin/python3',['-u','-c','from pathlib import Path; import sys; from noc.server import NocAPI,bootstrap; from noc.store import NocStore; db=Path(sys.argv[1]); bootstrap(NocStore(db),"mission-admin","synthetic-long-private-operator-password"); server=NocAPI("127.0.0.1",0,db); print(server.server_port,flush=True); server.serve_forever()',path.join(tmp,'isolated.sqlite3')],{cwd:path.resolve(__dirname,'../..')});
 const packet={number:1,timestamp:1234567890,lengthBytes:64,protocol:'DNS',source:'192.168.100.20',destination:'192.168.100.1',sourcePort:51111,destinationPort:53,dnsQuery:'example.org'};
 const investigation={format:'v79-netpulse-investigation-v1',analysis:{source:'isolated QA fixture',packets:[packet,{...packet,number:2,protocol:'TLS',dnsQuery:null,tlsServerName:'<img src=x onerror=alert(1)>'}]}};
 async function main(){
  const port=await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('Isolated server startup timeout')),15000);py.stdout.once('data',d=>{clearTimeout(t);resolve(Number(d.toString().trim()));});py.once('exit',code=>reject(Error('Server exited '+code)));});
- const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+ const browser=await chromium.launch({executablePath:process.env.SENTINEL_CHROME_PATH||'/usr/bin/google-chrome',headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1050}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/mission-control/api/status',r=>r.fulfill({json:{mode:'live',last_check:'2026-10-10T20:00:00Z',services:[{name:'Fixture website',status:'up',http:200,ms:123}],trend:[{ms:123},{ms:145}],history:[]}}));
   await page.route('**/mission-control/api/qa/latest',r=>r.fulfill({json:{results:[]}}));
+  await page.route('**/api/v1/network/capabilities',r=>r.fulfill({json:{captureReason:'Synthetic operator QA: no live capture',targets:[{name:'Hub',host:'example.org',port:443}],traceroute:false}}));
+  await page.route('**/api/v1/network/diagnostic',r=>r.fulfill({json:{target:'Synthetic fixture',at:'Test time',note:'No network probe performed',resolutionMs:0,results:[]}}));
   await page.goto('http://127.0.0.1:'+port,{waitUntil:'domcontentloaded'});
   assert(await page.locator('#loginSection').isVisible());
   await page.locator('#username').fill('mission-admin');await page.locator('#password').fill('synthetic-long-private-operator-password');await page.locator('#loginForm button').click();await page.locator('#appSection').waitFor({state:'visible'});
   await page.locator('#nativeServices').getByText('1',{exact:true}).waitFor();assert(await page.locator('#nativeTrend svg').isVisible());assert.equal(await page.locator('iframe').count(),0);
+  const failingStatus=r=>r.fulfill({status:503,json:{error:'synthetic unavailable'}});
+  await page.route('**/mission-control/api/status',failingStatus);
+  await page.locator('#nativeRefresh').click();
+  await page.getByText('MONITORING STATUS UNVERIFIED',{exact:true}).waitFor();
+  assert.equal(await page.locator('#nativeServices').textContent(),'—','Old healthy count must not survive refresh failure');
+  assert.equal(await page.locator('#nativeServiceRows').locator('.v79-row').count(),0,'Old healthy service rows must be cleared');
+  assert.equal(await page.locator('#nativeTrend svg').count(),0,'Old trend must be cleared');
+  await page.unroute('**/mission-control/api/status',failingStatus);
+  await page.locator('#nativeRefresh').click();
+  await page.locator('#nativeServices').getByText('1',{exact:true}).waitFor();
   for(const route of ['devices','map','activity','alerts','diagnostics','design','customers','reports','settings','packets','overview']){await page.locator('.nav-item[data-page="'+route+'"]').click();await page.waitForFunction(key=>document.querySelector('.nav-item[aria-current="page"]')?.dataset.page===key,route);assert.equal(await page.locator('#enterprisePageTitle').textContent(),Object.entries({devices:'Devices',map:'Network Map',activity:'Web & App Activity',alerts:'Alerts & approvals',diagnostics:'Diagnostics',design:'Network Design',customers:'Managed customers',reports:'Reports & history',settings:'Sensors & security',packets:'Packet Explorer',overview:'Overview'}).find(x=>x[0]===route)[1]);}
+  await page.locator('.nav-item[data-page="diagnostics"]').click();
+  await page.locator('#enterpriseTCP').click();
+  await page.locator('#enterpriseDiagResult').getByText(/Synthetic fixture/).waitFor();
+  assert(await page.locator('#enterpriseTrace').isDisabled(),'Unsupported traceroute must stay disabled after TCP diagnostic');
   await page.locator('.nav-item[data-page="packets"]').click();await page.locator('#netpulseImport').setInputFiles({name:'fixture.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(investigation))});await page.locator('#enterprisePacketStatus').getByText(/2 frames/).waitFor();await page.locator('#enterprisePackets button').first().click();assert((await page.locator('#enterprisePacketDetail').textContent()).includes('does not prove'));assert((await page.locator('#enterpriseFlows').textContent()).includes('2'));
   await page.locator('#enterprisePacketSearch').fill('TLS');assert.equal(await page.locator('#enterprisePackets button').count(),1);await page.locator('#enterpriseMode').selectOption('analyst');assert(await page.locator('body').evaluate(n=>n.classList.contains('enterprise-analyst')));
   await page.locator('.nav-item[data-page="activity"]').click();assert((await page.locator('#enterpriseDomains').textContent()).includes('example.org'));assert.equal(await page.locator('#enterpriseDomains img').count(),0);
@@ -26,7 +42,7 @@ async function main(){
   await page.locator('.nav-item[data-page="overview"]').click();await page.locator('#missionControlPanel').waitFor({state:'visible'});await page.screenshot({path:path.join(tmp,'enterprise-desktop.png'),fullPage:true});
   await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(tmp,'enterprise-mobile.png'),fullPage:true});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'Mobile document must not overflow');
   await page.locator('#logout').click();await page.locator('#loginSection').waitFor({state:'visible'});assert.equal(await page.locator('#enterpriseDomains img').count(),0);assert.equal(await page.locator('#enterpriseDesignList').textContent(),'');assert((await page.locator('#enterprisePacketStatus').textContent()).includes('No packet'));assert.equal(errors.length,0,errors.join('|'));
-  console.log('PASS: all 11 routes, charts, preserved controls, safe import/search/explanation, design, mobile layout, logout and zero JS errors');console.log('SCREENSHOTS '+tmp);
+  console.log('PASS: all 11 routes, fail-closed chart evidence, disabled traceroute, preserved controls, safe import/search/explanation, design, mobile layout, logout and zero JS errors');console.log('SCREENSHOTS '+tmp);
  }finally{await browser.close();}
 }
 main().catch(e=>{console.error(e.stack);process.exitCode=1;}).finally(()=>py.kill('SIGTERM'));
