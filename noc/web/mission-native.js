@@ -79,7 +79,7 @@ function renderStatus(s,qa){
  }
  if(!history.length)events.append(el("p","muted","No monitoring events recorded."));
  const lab=s.lab||{};
- put("nativeDell",lab.status?String(lab.status).toUpperCase():"NOT VERIFIED");
+ put("nativeDell",lab.status?"MONITOR REPORT: "+String(lab.status).toUpperCase():"NOT VERIFIED");
  put("nativeDellDetail",[lab.ip||"No lab IP",lab.rtt_ms!=null?lab.rtt_ms+" ms":"No RTT",lab.ssh||"SSH not assessed"].join(" · "));
  put("nativeInsight",!services.length?
   "No public-service measurements available. Do not assume services are healthy.":
@@ -90,8 +90,14 @@ function renderStatus(s,qa){
 }
 function renderQA(qa){
  const rows=Array.isArray(qa.results)?qa.results:[],counts={pass:0,review:0,"auth-gated":0,fail:0};
+ // Historical browser QA must not silently appear to be a current monitoring result.
+ const qaAt=Date.parse(qa.at);
+ const qaAge=Date.now()-qaAt;
+ const qaRecent=Number.isFinite(qaAt)&&qaAge>=-120000&&qaAge<=24*60*60*1000;
+ const qaLabel=q("nativeQaRun");
+ if(qaLabel)qaLabel.dataset.qaFreshness=qa.runId?(qaRecent?"recent":"historical"):"unverified";
  for(const r of rows)if(Object.hasOwn(counts,r.status))counts[r.status]++;
- put("nativeQaRun",qa.runId?"Run "+clean(qa.runId,60)+" · "+when(qa.at):"No automated browser QA run");
+ put("nativeQaRun",qa.runId?(qaRecent?"RECENT QA SNAPSHOT":"HISTORICAL QA · NOT CURRENT HEALTH")+" · Run "+clean(qa.runId,60)+" · "+when(qa.at):"No automated browser QA run");
  put("nativeQaSummary",counts.pass+" passed · "+counts.review+" review · "+counts["auth-gated"]+" auth-gated · "+counts.fail+" failed");
  const target=clear("nativeQA");
  for(const row of rows){
@@ -175,6 +181,7 @@ function markLiveEvidenceUnavailable(){
  for(const id of ["nativeServices","nativeHealthy","nativeDegraded","nativeLatency","nativeDell"])put(id,"—");
  for(const id of ["nativeServiceRows","nativeTrend","nativeActivity","nativeQA","netpulseNicRows"])clear(id);
  for(const id of ["nativeFreshness","nativeQaRun","nativeQaSummary","nativeDellDetail","netpulseNicSource"])put(id,"Current evidence unavailable");
+ const qaLabel=q("nativeQaRun");if(qaLabel)qaLabel.dataset.qaFreshness="unverified";
  put("nativeInsight","The latest measurements could not be verified. Do not infer that services are healthy.");
  const badge=q("nativeLiveBadge");badge.textContent="MONITORING STATUS UNVERIFIED";badge.className="v79-chip v79-chip-warn";
 }
