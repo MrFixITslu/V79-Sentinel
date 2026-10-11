@@ -1,0 +1,11 @@
+# Generated telemetry, screenshots, logs, caches and local dependencies
+/data/
+/qa/node_modules/
+__pycache__/
+*.pyc
+*.log
+.env
+.env.*
+
+# Historical manually retained pre-Git Sentinel prototype backup.
+/sentinel.v01-backup.py

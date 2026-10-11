@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V79 Sentinel · Command Center</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/mission-native.css"><link rel="stylesheet" href="/enterprise-center.css">
+</head><body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="logo"><span class="logo-mark">◈</span><div><strong>V79 SENTINEL</strong><small>NETWORK OPERATIONS</small></div></div>
+    <div class="divider"></div>
+    <nav class="nav" aria-label="Sentinel operator sections"><a class="nav-item active" href="#missionControlPanel">◉ &nbsp; Mission Control</a><a class="nav-item" href="#netpulseLab">◈ &nbsp; NetPulse Lab</a><a class="nav-item" href="#ownerPilotPanel">⌁ &nbsp; Network operations</a><a class="nav-item" href="#managedCustomersSection">▦ &nbsp; Managed customers</a><a class="nav-item" href="#resolutionProof">◇ &nbsp; Incident history</a><a class="nav-item" href="#securityPanel">♢ &nbsp; Operator security</a></nav>
+    <div class="sidebar-bottom"><span class="dot"></span> Acer operator NOC · Internal pilot<br><small>Automatic ticket dispatch OFF</small></div>
+  </aside>
+  <main>
+    <header><div><p class="eyebrow">PROVIDER OPERATIONS CENTER</p><h1>Sentinel Command Center</h1><p class="subtitle">Proactive visibility across customers, remote sites and infrastructure.</p></div><div class="header-right"><span class="pill">LIVE APP MONITORING · SIMULATED NOC LAB</span><button id="logout" class="secondary" hidden>Sign out</button></div></header>
+    <section id="loginSection" class="login-wrap">
+      <form id="loginForm" class="login card">
+        <span class="eyebrow">RESTRICTED ACCESS</span><h2>Operator sign-in</h2>
+        <p class="muted">Only authorized V79 service-provider personnel can view this NOC. Customer dashboards are not enabled.</p>
+        <label>Username<input id="username" autocomplete="username" required></label>
+        <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+        <label>Authenticator code (only after MFA is enabled)<input id="loginOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="6-digit code" aria-label="Authenticator code"></label>
+        <label>Recovery code (alternative to authenticator code)<input id="loginRecovery" type="text" autocomplete="off" maxlength="27" placeholder="sc_..." aria-label="One-time recovery code"></label>
+        <button type="submit">Sign in securely →</button><p id="loginError" class="error" role="alert"></p>
+      </form>
+    </section>
+    <section id="appSection" hidden>
+      <div class="notice"><strong>Sentinel unified operator view:</strong> Mission Control shows real read-only public-service monitoring and limited public-page browser QA. Other multi-customer NOC inventory and incident data are simulated. No Tiquet tickets are sent.</div>
+      <section id="missionControlPanel" class="v79-dashboard" aria-label="Mission Control overview">
+        <div class="v79-hero">
+          <div class="v79-hero-copy"><p class="eyebrow">MISSION CONTROL · SENTINEL LIVE OBSERVABILITY</p>
+            <h2>Know what is working.<br><span>See what needs attention.</span></h2>
+            <p>Real service measurements, browser quality, network evidence and supervised incident operations—one unified workspace.</p>
+            <div class="v79-hero-actions"><span id="nativeLiveBadge" class="v79-chip">CONNECTING</span><span id="nativeFreshness" class="v79-freshness">Loading latest telemetry…</span><button id="nativeRefresh" type="button" class="secondary">↻ Refresh data</button></div>
+          </div>
+          <div class="v79-hero-visual" role="img" aria-label="Network observation visual: connected services and central Sentinel shield">
+             <svg viewBox="0 0 420 220" aria-hidden="true"><defs><radialGradient id="netglow"><stop stop-color="#35e3c9" stop-opacity=".2"/><stop offset="1" stop-color="#35e3c9" stop-opacity="0"/></radialGradient></defs>
+               <circle cx="210" cy="110" r="108" fill="url(#netglow)"/><circle cx="210" cy="110" r="80" fill="none" stroke="#224e5c" stroke-dasharray="4 11"/>
+               <g stroke="#3bb1c0" stroke-width="1.5" opacity=".55"><path d="M210 110 L52 48 M210 110 L368 52 M210 110 L56 183 M210 110 L360 184 M210 110 L207 13 M210 110 L210 204"/></g>
+               <g fill="#1b7783" stroke="#7ef5dc" stroke-width="2"><circle cx="52" cy="48" r="9"/><circle cx="368" cy="52" r="9"/><circle cx="56" cy="183" r="9"/><circle cx="360" cy="184" r="9"/><circle cx="207" cy="13" r="7"/><circle cx="210" cy="204" r="7"/></g>
+               <path d="M210 58 L253 76 V114 Q252 144 210 164 Q168 144 167 114 V76Z" fill="#123d50" stroke="#59e5d0" stroke-width="3"/><path d="M190 110 l14 14 27-31" stroke="#7afee1" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+             <small>V79 Digital · trusted observability</small>
+          </div>
+        </div>
+        <div class="v79-stats">
+          <article class="v79-stat"><div class="v79-stat-icon">◉</div><span>Services monitored</span><strong id="nativeServices">—</strong><small>Public health observations</small></article>
+          <article class="v79-stat"><div class="v79-stat-icon green">✓</div><span>Healthy services</span><strong id="nativeHealthy">—</strong><small>Responded in last cycle</small></article>
+          <article class="v79-stat"><div class="v79-stat-icon amber">!</div><span>Need attention</span><strong id="nativeDegraded">—</strong><small>Current health classification</small></article>
+          <article class="v79-stat"><div class="v79-stat-icon sky">↗</div><span>Average response</span><strong id="nativeLatency">—</strong><small>Observed HTTP timings</small></article>
+        </div>
+        <p id="nativeDataError" class="v79-warning" role="status"></p>
+        <div class="v79-grid-two">
+          <section class="v79-pane"><div class="v79-pane-header"><div><p class="eyebrow">SERVICE ASSURANCE</p><h3>Application health</h3></div><span class="v79-chip">HTTP · TLS</span></div><div id="nativeServiceRows" class="v79-dense-list" aria-live="polite"></div></section>
+          <section class="v79-pane"><div class="v79-pane-header"><div><p class="eyebrow">REAL MONITORING EVIDENCE</p><h3>24-hour response trend</h3></div><span class="v79-chip">MEASURED</span></div><div class="v79-chart-container" id="nativeTrend" aria-label="Measured response-time chart"></div><p class="v79-pane-note">Measured HTTP response times—not end-user page speed or bandwidth.</p>
+            <div class="v79-insight"><strong>◈ Sentinel insight</strong><p id="nativeInsight">Waiting for the next monitoring cycle.</p></div>
+            <div class="v79-lab"><strong>Local Dell pilot link</strong><span id="nativeDell">—</span><small id="nativeDellDetail">Not measured yet</small></div>
+          </section>
+        </div>
+        <div class="v79-grid-two">
+          <section class="v79-pane"><div class="v79-pane-header"><div><p class="eyebrow">EVIDENCE TIMELINE</p><h3>Recent network activity</h3></div><span class="v79-chip">LOCAL</span></div><div class="v79-dense-list" id="nativeActivity"></div></section>
+          <section class="v79-pane"><div class="v79-pane-header"><div><p class="eyebrow">AUTOMATED PUBLIC PAGE QA</p><h3>Browser quality checks</h3></div><span class="v79-chip">MOBILE + DESKTOP</span></div><p class="v79-pane-note" id="nativeQaRun">Awaiting browser QA results</p><strong id="nativeQaSummary">—</strong>
+            <div class="v79-table-scroll"><table class="v79-table"><thead><tr><th>Application</th><th>Viewport</th><th>HTTP</th><th>Load</th><th>Status</th><th>Evidence</th></tr></thead><tbody id="nativeQA"></tbody></table></div><p class="v79-pane-note">QA checks public pages. Authenticated business workflows require separate supervised tests.</p>
+            <a class="v79-text-link" href="/mission-control/api/report.csv" download="sentinel-public-monitoring.csv">↓ Download original monitoring CSV</a>
+          </section>
+        </div>
+      </section>
+      <section id="netpulseLab" class="v79-pane v79-netpulse" aria-label="NetPulse Network Lab">
+        <div class="v79-pane-header"><div><p class="eyebrow">V79 NETPULSE · NETWORK INTELLIGENCE</p><h2>Network Lab</h2><p class="v79-pane-note">Measured interface counters and investigation evidence; no background scans or privileged packet capture.</p></div><span class="v79-chip">SOURCE · NETPULSE</span></div>
+        <div class="v79-grid-two">
+          <div class="v79-subpane"><div class="v79-pane-header"><h3>Acer network interfaces</h3><span class="v79-chip">REAL COUNTERS</span></div><p id="netpulseNicSource" class="v79-pane-note">Loading measured host counters…</p><div id="netpulseNicRows" class="v79-dense-list"></div><p class="v79-pane-note">All host interface traffic. Not bandwidth, a packet capture or the Dell's interfaces.</p></div>
+          <div class="v79-subpane"><div class="v79-pane-header"><h3>NetPulse investigation</h3><span class="v79-chip">LOCAL-ONLY FILE</span></div><p class="v79-pane-note">Export an investigation from V79 NetPulse desktop, then open its JSON here. Files never leave this browser.</p>
+            <label class="v79-import-label" for="netpulseImport">↑ Open NetPulse investigation JSON</label><input id="netpulseImport" type="file" accept=".json,application/json" class="v79-file-input">
+            <p class="v79-pane-note" id="netpulsePrivacy">No investigation loaded; nothing uploaded.</p><p class="v79-pane-note" id="netpulseImportStatus">No investigation imported.</p>
+            <div id="netpulseProtocolBars" class="v79-bars"></div>
+          </div>
+        </div>
+        <div class="v79-grid-two">
+          <div class="v79-subpane"><h3>Observed endpoint conversations</h3><p class="v79-pane-note">Only flows in the imported capture. This is not an inferred physical topology.</p><div class="v79-dense-list" id="netpulseFlowRows"></div></div>
+          <div class="v79-subpane"><div class="v79-pane-header"><h3>Decoded packet metadata</h3><label class="v79-inline-filter">Protocol <select id="netpulseProtocolFilter"><option value="All">All protocols</option></select></label></div>
+            <div class="v79-table-scroll"><table class="v79-table"><thead><tr><th>#</th><th>Protocol</th><th>From</th><th>To</th><th>Bytes</th><th>DNS evidence</th></tr></thead><tbody id="netpulsePacketRows"></tbody></table></div><p class="v79-pane-note" id="netpulsePacketNote">Open a local investigation to inspect decoded packet metadata.</p>
+          </div>
+        </div>
+        <p class="v79-pane-note">NetPulse's Tauri desktop app still handles .pcap/.pcapng capture, native TCP tests and traceroute. Importing saved metadata here does not grant the NOC permission to inspect other networks.</p>
+      </section>
+      <section class="card content-card" id="ownerPilotPanel" hidden>
+        <div class="section-head"><div><p class="eyebrow">LIVE FIRST-PARTY PILOT · READ ONLY</p><h2>V79 Digital network & applications</h2></div><span id="ownerPilotBadge" class="small-tag">VERIFYING</span></div>
+        <p class="muted" id="ownerPilotStatus">Loading owner-approved monitoring evidence…</p>
+        <div class="columns">
+          <div><h3>Gateway and Dell connectivity</h3><div class="list" id="ownerPilotChecks"></div></div>
+          <div><h3>Public application entries</h3><div class="list" id="ownerPilotApps"></div></div>
+        </div>
+        <p class="muted" id="ownerPilotSecurity">Independent mTLS telemetry. Connectivity and app-readiness checks do not validate full business workflows.</p>
+        <div class="section-head"><div><p class="eyebrow">SIMULATED INCIDENT QUALIFICATION · NOT CUSTOMER TICKETS</p><h3>Application incident lab</h3></div><span id="ownerMockBadge" class="small-tag">VERIFYING</span></div>
+        <p class="muted" id="ownerMockStatus">Checking qualified mock incident evidence…</p>
+        <div class="list" id="ownerMockIncidents"></div>
+      </section>
+      <section class="card content-card" id="sentinelReviewPanel" hidden>
+        <div class="section-head"><div><p class="eyebrow">OWNER-ONLY · SIGNED INCIDENT EVIDENCE</p>
+          <h2>Supervised V79Tiquet ticket approval</h2></div>
+          <span class="small-tag" id="sentinelReviewBadge">DISABLED</span></div>
+        <p class="muted">Only independently signed, current owner-network incidents qualify.
+          Each proposal requires fresh administrator MFA and explicit approval.
+          Approval places an event in an OFFLINE queue; no ticket is dispatched.</p>
+        <div id="sentinelReviewList" class="list" aria-label="Verified ticket proposals"></div>
+        <form id="sentinelReviewForm" class="tool-form security-form" hidden>
+          <label>Verified owner incident<select name="incident_id" id="sentinelReviewIncident" required></select></label>
+          <label>Fresh six-digit authenticator code
+            <input name="otp" type="text" autocomplete="one-time-code"
+              inputmode="numeric" maxlength="6" pattern="[0-9]{6}" required></label>
+          <label><input type="checkbox" name="confirmed" required>
+            I reviewed the verified evidence and approve one internal pilot ticket proposal</label>
+          <button type="submit">Sign and queue for supervised dispatch</button>
+        </form>
+        <p id="sentinelReviewMessage" role="status" class="muted"></p>
+      </section>
+      <div class="metrics">
+        <div class="metric card"><span>CUSTOMERS</span><strong id="customerCount">—</strong><small>Provider-managed</small></div>
+        <div class="metric card"><span>REMOTE SITES</span><strong id="siteCount">—</strong><small>Isolated per customer</small></div>
+        <div class="metric card"><span>ACTIVE INCIDENTS</span><strong id="incidentCount">—</strong><small>Grouped by failure domain</small></div>
+        <div class="metric card"><span>AGENTS ONLINE</span><strong id="agentCount">—</strong><small>Simulated heartbeat</small></div>
+      </div>
+      <div class="columns">
+        <section class="card content-card"><div class="section-head"><div><p class="eyebrow">IMPACTIQ FOUNDATION</p><h2>Active incidents</h2></div><span id="incidentTag" class="small-tag">0 incidents</span></div>
+          <div id="incidents" class="list"><p class="muted">No incidents detected.</p></div>
+        </section>
+        <section class="card content-card"><div class="section-head"><div><p class="eyebrow">SITE CONNECTIVITY</p><h2>Edge agents</h2></div><span class="small-tag">OUTBOUND DESIGN</span></div>
+          <div id="agents" class="list"><p class="muted">No agents enrolled.</p></div>
+        </section>
+      </div>
+      <section class="card content-card" id="managedCustomersSection"><div class="section-head"><div><p class="eyebrow">MULTI-TENANT MODEL</p><h2>Managed customers and sites</h2></div><span class="small-tag">PROVIDER VIEW</span></div><div id="sites" class="site-grid"></div></section>
+      <section class="card content-card"><div class="section-head"><div><p class="eyebrow">EXPLICIT ASSET INVENTORY</p><h2>Monitored assets</h2></div><span class="small-tag">NO ACTIVE NETWORK SCANNING</span></div><div id="assets" class="table-wrap"></div></section>
+      <section class="card content-card" id="resolutionProof">
+        <div class="section-head"><div><p class="eyebrow">RESOLUTIONPROOF · FOUNDATION</p><h2>Incident history & recovery evidence</h2></div><span class="small-tag">SIMULATED ONLY</span></div>
+        <p class="muted">Export simulated incident records for lab analysis. This is not a customer SLA report.</p>
+        <a class="report-download" href="/api/v1/reports/incidents.csv" download="sentinel-simulated-incidents.csv">Export simulated incident CSV ↓</a>
+        <div class="history-stats">
+          <div><span>RESOLVED INCIDENTS</span><strong id="resolvedCount">—</strong></div>
+          <div><span>AVERAGE DETECTION-TO-RECOVERY</span><strong id="recoveryTime">—</strong></div>
+          <div><span>MOCK INTEGRATION EVENTS</span><strong id="mockEventCount">—</strong></div>
+        </div>
+        <div id="history" class="list"><p class="muted">No incidents yet.</p></div>
+      </section>
+      <section class="card content-card" id="securityPanel">
+        <div class="section-head"><div><p class="eyebrow">PROVIDER IDENTITY</p><h2>Operator security</h2></div><span class="small-tag" id="roleLabel">ROLE</span></div>
+        <p class="muted" id="mfaState">Checking authenticator security…</p>
+        <form id="mfaBeginForm" class="tool-form security-form">
+          <h3>Enable authenticator protection (TOTP)</h3>
+          <p class="muted">Voluntary staging enrollment. Requires your current password; don't enable until you have an authenticator app and can save its recovery details.</p>
+          <label>Confirm existing password<input name="password" type="password" autocomplete="current-password" minlength="18" required></label>
+          <button type="submit">Start MFA enrollment</button>
+        </form>
+        <div id="mfaSetup" class="credential-panel" hidden>
+          <strong>Authenticator setup — private one-time value</strong>
+          <p>Add this key or URI to an authenticator app. Do not share it. Enrollment expires after 10 minutes, and confirming will sign you out.</p>
+          <code id="mfaSecret"></code>
+          <code id="mfaUri"></code>
+          <form id="mfaConfirmForm" class="tool-form security-form">
+            <label>Six-digit authenticator code<input name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label>
+            <button type="submit">Verify and enable MFA</button>
+          </form>
+          <button class="secondary" type="button" id="hideMfaSetup">Hide setup details</button>
+        </div>
+        <div id="recoveryCodesPanel" class="credential-panel" hidden>
+          <h3>MFA is enabled — save your recovery codes now</h3>
+          <p>These eight single-use codes appear only once. Store them in a trusted password manager. Never send them to anyone. Your previous session has ended.</p>
+          <pre id="recoveryCodes" class="one-time-codes"></pre>
+          <button id="savedRecoveryCodes" type="button">I have saved these codes — return to sign-in</button>
+        </div>
+        <section id="operatorAdminPanel" hidden>
+          <div class="divider"></div>
+          <h3>Provider staff access</h3>
+          <p class="muted">Viewers can read; technicians may acknowledge incidents; admins manage inventory and accounts. Creating or disabling accounts requires password re-verification.</p>
+          <form id="createOperatorForm" class="tool-form security-form">
+            <label>Login username<input name="username" pattern="[a-z][a-z0-9_.-]{2,63}" maxlength="64" required></label>
+            <label>Temporary password<input name="password" type="password" minlength="18" autocomplete="new-password" required></label>
+            <label>Role<select name="role"><option value="viewer">Read-only viewer</option><option value="operator">Technician / NOC operator</option><option value="admin">Administrator</option></select></label>
+            <label>Your current admin password<input name="current_password" type="password" autocomplete="current-password" required></label>
+            <button type="submit">Create staging operator</button>
+          </form>
+          <label class="disable-confirm">Your current password (required to disable an account)
+            <input id="disableOperatorPassword" type="password" autocomplete="current-password">
+          </label>
+          <div id="operatorList" class="list" aria-label="NOC operator accounts"></div>
+        </section>
+      </section>
+      <section class="card content-card" id="operatorTools">
+        <div class="section-head"><div><p class="eyebrow">OPERATOR CONFIGURATION</p><h2>Lab inventory & agent management</h2></div><span class="small-tag">SIMULATION ONLY</span></div>
+        <p class="muted">Add simulated sites and assets without scanning networks. Changes affect this Acer staging database only.</p>
+        <div class="form-grid">
+          <form id="customerForm" class="tool-form">
+            <h3>1 · Customer</h3>
+            <label>Customer display name<input name="name" maxlength="100" required placeholder="DEMO — Sample Business"></label>
+            <button type="submit">Add customer</button>
+          </form>
+          <form id="siteForm" class="tool-form">
+            <h3>2 · Site</h3>
+            <label>Customer<select name="customer_id" id="siteCustomer" required></select></label>
+            <label>Site name<input name="name" maxlength="100" required placeholder="North Branch"></label>
+            <button type="submit">Add site</button>
+          </form>
+          <form id="assetForm" class="tool-form">
+            <h3>3 · Network asset</h3>
+            <label>Site<select name="site_id" id="assetSite" required></select></label>
+            <label>Device name<input name="name" maxlength="100" required placeholder="Branch WAN Router"></label>
+            <label>IP address (inventory only)<input name="address" maxlength="45" required placeholder="192.168.1.1"></label>
+            <label>Type<select name="type"><option value="router">Router</option><option value="switch">Switch</option><option value="server">Server</option><option value="access-point">Access point</option><option value="ups">UPS</option></select></label>
+            <button type="submit">Add asset</button>
+          </form>
+          <form id="checkForm" class="tool-form">
+            <h3>4 · Monitoring check</h3>
+            <label>Asset<select name="asset_id" id="checkAsset" required></select></label>
+            <label>Check description<input name="label" maxlength="100" required placeholder="WAN availability"></label>
+            <label>Dependency / failure domain<input name="domain" maxlength="100" required placeholder="branch-wan"></label>
+            <button type="submit">Add simulated check</button>
+          </form>
+          <form id="agentForm" class="tool-form">
+            <h3>5 · Edge Agent</h3>
+            <label>Site<select name="site_id" id="agentSite" required></select></label>
+            <label>Agent name<input name="name" maxlength="100" required placeholder="Edge Branch 1"></label>
+            <button type="submit">Enroll simulated agent</button>
+          </form>
+          <form id="maintenanceForm" class="tool-form">
+            <h3>6 · Maintenance window</h3>
+            <label>Site<select name="site_id" id="maintenanceSite" required></select></label>
+            <label>Duration (hours)<input name="hours" type="number" min="1" max="336" value="1" required></label>
+            <label>Reason<input name="reason" maxlength="160" required placeholder="Planned network upgrade"></label>
+            <button type="submit">Start site maintenance</button>
+          </form>
+        </div>
+        <div id="operationStatus" class="operation-status" role="status" aria-live="polite"></div>
+        <div id="maintenanceList" class="list" aria-label="Scheduled maintenance windows"></div>
+        <div id="oneTimeSecret" class="credential-panel" hidden>
+          <strong>One-time Edge Agent credential</strong>
+          <p>This value is displayed once. Store it in an owner-only agent configuration file; never share in a support message.</p>
+          <code id="agentCredential"></code>
+          <button id="hideCredential" type="button" class="secondary">Hide credential</button>
+        </div>
+      </section>
+      <footer><span id="refreshTime">Loading…</span><span>V79 Sentinel · Foundation build · Integration events held locally</span></footer>
+    </section>
+  </main>
+</div>
+<script src="/netpulse-model.js" defer></script>
+<script src="/mission-native.js" defer></script>
+<script src="/enterprise-center.js" defer></script>
+<script src="/app.js" defer></script>
+</body></html>

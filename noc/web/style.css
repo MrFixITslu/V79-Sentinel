@@ -1,0 +1,52 @@
+:root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#090f1b;color:#e9f1fa}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top right,#102a38 0,#090f1b 46%);min-height:100vh}button,input{font:inherit}button{background:#27b8bd;color:#061524;border:0;border-radius:9px;padding:12px 18px;cursor:pointer;font-weight:700}button:hover{filter:brightness(1.08)}button:focus-visible,input:focus-visible{outline:2px solid #6bf5ec;outline-offset:2px}.secondary{background:#1b2a3d;color:#eaf7ff;border:1px solid #314057}.shell{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}.sidebar{background:#0c1523;border-right:1px solid #233345;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:29px 18px}.logo{display:flex;align-items:center;gap:12px;padding:7px}.logo-mark{background:#155967;border:1px solid #1ac9c9;color:#7ffff2;font-size:30px;border-radius:13px;width:46px;height:46px;text-align:center}.logo strong{font-size:15px;letter-spacing:1px}.logo small{display:block;color:#7790a7;font-size:10px;letter-spacing:2px;margin-top:4px}.divider{border-top:1px solid #24364a;margin:29px 0 20px}.nav{display:grid;gap:8px}.nav-item{font-size:13px;color:#8aa4b8;padding:14px 13px;border-radius:9px}.nav-item.active{background:#133a43;color:#67f6ed}.sidebar-bottom{margin-top:auto;font-size:13px;color:#c9e2ea;border-top:1px solid #26374a;padding:23px 8px}.sidebar-bottom small{display:block;color:#7590a3;font-size:11px;margin-top:6px}.dot{display:inline-block;background:#32ddac;width:8px;height:8px;border-radius:50%;margin-right:6px}main{max-width:1480px;width:100%;margin:auto;padding:36px 44px}header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:28px}.eyebrow{font-size:10px;color:#48ccc8;font-weight:800;letter-spacing:2px;margin:0 0 11px}h1{font-size:30px;letter-spacing:-.9px;margin:0 0 7px}h2{font-size:17px;margin:0 0 7px}.subtitle,.muted{color:#8ea6b8}.subtitle{font-size:13px;margin:0}.header-right{display:flex;gap:12px;align-items:center}.pill,.small-tag{color:#a9e4db;font-weight:700;font-size:10px;letter-spacing:.6px;border:1px solid #22646b;background:#12323b;padding:9px 11px;border-radius:6px;white-space:nowrap}.small-tag{color:#8eafbf;background:#142031;border-color:#243c4b}.card{background:#101b2b;border:1px solid #26364a;border-radius:13px;box-shadow:0 10px 26px #00000019}.notice{background:#17323a;border:1px solid #2a646d;color:#b9dadf;border-radius:11px;padding:14px 17px;font-size:12px;line-height:1.6;margin-bottom:18px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:19px}.metric{padding:22px}.metric span{display:block;color:#8ea5b7;font-size:10px;letter-spacing:1.3px;font-weight:800}.metric strong{display:block;color:#f4fcff;font-size:32px;margin:11px 0 3px}.metric small{color:#6e899f;font-size:11px}.columns{display:grid;grid-template-columns:1.3fr 1fr;gap:17px;margin-bottom:17px}.content-card{padding:22px;margin-bottom:17px}.columns .content-card{margin:0}.section-head{display:flex;align-items:center;justify-content:space-between;gap:9px;border-bottom:1px solid #243347;padding-bottom:17px;margin-bottom:13px}.section-head .eyebrow{margin:0 0 6px}.section-head h2{margin:0}.list{display:grid;gap:9px}.incident,.agent,.site{padding:13px;background:#152234;border-radius:10px;border:1px solid #293a4e}.entry-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.entry-top strong{font-size:13px}.entry-sub{color:#899fb4;font-size:11px;margin-top:8px;line-height:1.5}.state{border-radius:5px;padding:5px 8px;font-size:10px;font-weight:800}.state.open{background:#5f2327;color:#ffb6aa}.state.acknowledged{background:#584023;color:#f9d39e}.state.resolved,.state.online{background:#193f37;color:#7de4c4}.state.offline,.state.revoked{background:#632d31;color:#ffbbbb}.state.never_seen{background:#2c364d;color:#b6c5d9}.site-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.site strong{display:block;font-size:13px}.site small{display:block;color:#88a2b7;margin-top:7px;font-size:11px}.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:12px}th{text-align:left;color:#748ea4;letter-spacing:1px;font-size:10px;padding:12px;border-bottom:1px solid #344355}td{padding:15px 12px;border-bottom:1px solid #233447;color:#c3d5e5}footer{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:#648197;padding:13px 2px 20px}.login-wrap{min-height:56vh;display:flex;align-items:center;justify-content:center}.login{width:min(450px,100%);padding:34px}.login label{display:grid;gap:9px;color:#a7bdc9;font-size:12px;margin:20px 0}.login input{padding:12px 14px;background:#0a1320;border:1px solid #365165;border-radius:8px;color:#fff;min-height:44px}.login button{width:100%;margin-top:10px}.login p{font-size:12px;line-height:1.6}.error{color:#ff9b91}button.small-action{font-size:10px;padding:7px 9px;background:#294250;color:#c1f7eb}.empty{color:#879cae;font-size:12px;padding:14px}@media(max-width:1100px){.shell{grid-template-columns:200px 1fr}main{padding:30px 22px}.metrics{grid-template-columns:repeat(2,1fr)}.columns{grid-template-columns:1fr}.site-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.shell{grid-template-columns:1fr}.sidebar{position:static;height:auto;padding:10px 17px}.sidebar .divider,.nav,.sidebar-bottom{display:none}.logo{padding:8px}main{padding:22px 14px}header{flex-direction:column}h1{font-size:25px}.metrics{gap:8px}.metric{padding:14px}.metric strong{font-size:24px}.content-card{padding:15px}.site-grid{grid-template-columns:1fr}footer{flex-direction:column}}
+
+/* Mission Control remains within the authenticated NOC, no direct iframe. */
+.nav-item{display:block;text-decoration:none;transition:background .18s,color .18s}
+.nav-item:hover,.nav-item:focus-visible{background:#193643;color:#b8fff1;outline:2px solid #3c9596;outline-offset:1px}
+#missionControlPanel{scroll-margin-top:18px}
+#missionControlPanel h3{font-size:14px;margin:4px 0 14px}
+#missionControlPanel .columns{grid-template-columns:1fr 1fr}
+@media(max-width:900px){#missionControlPanel .columns{grid-template-columns:1fr}}
+@media(max-width:700px){.sidebar .nav{display:flex;flex-wrap:wrap;gap:6px}.nav-item{font-size:11px;padding:8px 10px}}
+
+/* Full Mission Control visual and SVG trend chart, native original monitor UI. */
+.mission-full-frame{display:block;width:100%;height:1450px;background:#090f1b;border:1px solid #26364a;border-radius:10px;margin:14px 0 16px}
+#missionControlPanel .report-download{margin:0;white-space:nowrap}
+@media(max-width:1100px){.mission-full-frame{height:1580px}}
+@media(max-width:700px){.mission-full-frame{height:1850px}}
+/* Operator staging inventory forms */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:20px}
+.tool-form{background:#132235;border:1px solid #304457;border-radius:11px;padding:17px;display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.tool-form h3{font-size:14px;margin:0 0 4px;color:#dcf4ff}
+.tool-form label{display:flex;flex-direction:column;gap:7px;color:#a6bccd;font-size:11px}
+.tool-form input,.tool-form select{width:100%;border:1px solid #3b5364;background:#0b1727;border-radius:7px;color:#e7f7ff;min-height:38px;padding:9px;font-size:12px}
+.tool-form select:disabled,.tool-form button:disabled{opacity:.52;cursor:not-allowed}
+.tool-form button{padding:10px 12px;font-size:11px;margin-top:auto}
+.operation-status{min-height:17px;margin-top:15px;color:#91d8c9;font-size:12px}
+.operation-status.fail{color:#ffb5af}
+.credential-panel{margin-top:15px;padding:17px;background:#35261a;border:1px solid #866b43;color:#ffe5bd;border-radius:11px;font-size:12px}
+.credential-panel p{color:#dfc4a8;line-height:1.5}
+.credential-panel code{display:block;overflow-wrap:anywhere;background:#1d1b23;padding:10px;border-radius:5px;margin:10px 0;font-size:12px}
+
+[hidden]{display:none!important}
+
+.history-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:17px 0}
+.history-stats>div{background:#14273a;border:1px solid #284153;border-radius:9px;padding:16px}
+.history-stats span{display:block;color:#8babbc;font-weight:750;font-size:10px;letter-spacing:.7px}
+.history-stats strong{display:block;font-size:23px;margin-top:9px}
+@media(max-width:700px){.history-stats{grid-template-columns:1fr}}
+
+.report-download{display:inline-block;color:#001922;background:#45c9cb;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:800;text-decoration:none;margin:4px 0 8px}
+.report-download:hover{filter:brightness(1.08)}
+.report-download:focus-visible{outline:2px solid #93fff3;outline-offset:3px}
+
+/* Staging-only operator security settings */
+.security-form{max-width:560px;margin:18px 0}
+#securityPanel h3{font-size:15px}
+.disable-confirm{display:grid;gap:8px;max-width:440px;font-size:12px;color:#afc5d5;margin:20px 0 14px}
+.disable-confirm input{background:#0b1727;border:1px solid #3b5364;border-radius:7px;color:#e7f7ff;padding:10px;min-height:42px}
+#operatorList{max-width:690px}
+#operatorList .agent button{margin-top:11px}
+#mfaSetup{max-width:700px}
+#mfaSetup code{font-size:12px;overflow-wrap:anywhere;user-select:text}
+#mfaSetup .tool-form{border-color:#88674e}

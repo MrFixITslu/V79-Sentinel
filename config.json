@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "project": "V79 Sentinel",
+  "purpose": "Approved read-only HTTPS reachability checks for V79 services",
+  "services": [
+    {
+      "name": "Website",
+      "url": "https://v79sl.com/"
+    },
+    {
+      "name": "V79 Hub",
+      "url": "https://hub.v79sl.com/"
+    },
+    {
+      "name": "Academy",
+      "url": "https://academy.v79sl.com/"
+    },
+    {
+      "name": "FFPRO",
+      "url": "https://ffpro.v79sl.com/"
+    },
+    {
+      "name": "V79 Tiquet",
+      "url": "https://tiquet.v79sl.com/"
+    },
+    {
+      "name": "Marketing",
+      "url": "https://marketing.v79sl.com/"
+    },
+    {
+      "name": "V79 POS",
+      "url": "https://pos.v79sl.com/"
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "title": "V79 Sentinel protected-workflow QA readiness (STAGING ONLY)",
+  "enabled": false,
+  "mode": "preflight-only",
+  "safeguards": {
+    "existingAccountsUnchanged": true,
+    "syntheticTestUsersOnly": true,
+    "dedicatedTestOrganizationRequired": true,
+    "noFinancialTransactions": true,
+    "noEmailsSent": true,
+    "noCustomerData": true,
+    "noWrites": true,
+    "noAdminAccountAutomation": true,
+    "privateBrowserContexts": true,
+    "manualApprovalBeforeLogin": true
+  },
+  "gates": {
+    "testOrganizationVerified": false,
+    "syntheticAccountsProvided": false,
+    "permissionsReviewed": false,
+    "dedicatedTestDataVerified": false,
+    "accountIsolationVerified": false,
+    "credentialStorageReviewed": false,
+    "signedApprovalToExecute": false,
+    "cleanupWorkflowVerified": false,
+    "externalAppDeprovisionVerified": false
+  },
+  "flows": [
+    {
+      "app": "V79 Hub",
+      "role": "beta-member",
+      "allowed": "view subscriptions and app launcher",
+      "gated": true
+    },
+    {
+      "app": "FFPRO",
+      "role": "synthetic-standard-user",
+      "allowed": "view sample financial dashboard only",
+      "gated": true
+    },
+    {
+      "app": "V79 Tiquet",
+      "role": "test-org-agent",
+      "allowed": "view synthetic ticket listing only",
+      "gated": true
+    },
+    {
+      "app": "Marketing",
+      "role": "test-org-staff",
+      "allowed": "view test campaign listing only",
+      "gated": true
+    },
+    {
+      "app": "V79 POS",
+      "role": "test-org-clerk",
+      "allowed": "view demo catalog only",
+      "gated": true
+    },
+    {
+      "app": "Academy",
+      "role": "synthetic-student",
+      "allowed": "view enrolled test course only",
+      "gated": true
+    }
+  ],
+  "lifecycle": {
+    "organizationCreationStatus": "NOT_CREATED",
+    "syntheticAccountsCreationStatus": "NOT_CREATED",
+    "orgLabelPrefix": "Sentinel-QA-",
+    "scope": "separate test organization only; never V79 Digital or existing beta organizations",
+    "deleteTrigger": "after approved QA workflows finish or testing is cancelled",
+    "cleanupExecutionAvailable": false,
+    "cleanupSafetySuite": "scripts/test_tenant_cleanup.mjs (dry-run only)",
+    "blockedReason": "Hub has no supported deletion route for an accepted organization; app tenants also require their own verified deprovision."
+  }
+}

@@ -1,0 +1,21 @@
+[Unit]
+Description=V79 Sentinel NOC isolated Acer staging (simulated telemetry only)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/firelion/V79-Sentinel/sentinel
+ExecStart=/usr/bin/python3 -m noc.server --bind 127.0.0.1 --port 8788 --db /home/firelion/V79-Sentinel/sentinel/data/noc-staging.sqlite3
+Environment=PYTHONUNBUFFERED=1
+Environment=SENTINEL_NOC_EXTERNAL_ORIGIN=https://firelion-aspire-a315-51.tailcbdd5b.ts.net
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+UMask=0077
+MemoryMax=256M
+
+[Install]
+WantedBy=default.target

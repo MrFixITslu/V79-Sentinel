@@ -1,0 +1,18 @@
+"use strict";
+const assert=require('node:assert/strict');
+const M=require('../web/netpulse-model.js');
+const packet={number:1,timestamp:12,lengthBytes:64,protocol:'DNS',source:'192.168.100.20',destination:'192.168.100.1',dnsQuery:'example.org'};
+const wrap=packets=>({format:'v79-netpulse-investigation-v1',analysis:{packets}});
+assert.equal(M.normalize(wrap([packet])).analysis.packets.length,1);
+for(const change of [{lengthBytes:-1},{lengthBytes:'100'},{number:'1'},{source:null},{lengthBytes:Infinity}])assert.throws(()=>M.normalize(wrap([{...packet,...change}])));
+assert.throws(()=>M.normalize(wrap(new Array(3001).fill(packet))));
+const p=M.normalize(wrap([packet,{...packet,number:2,source:packet.destination,destination:packet.source,dnsQuery:null,tcpRetransmission:true}])).analysis.packets;
+const s=M.summarize(p);assert.equal(s.flows.length,1);assert.equal(s.totalBytes,128);assert.equal(s.endpoints.length,2);assert.equal(s.domains[0].source,'DNS message');assert.equal(s.retransmissions,1);
+assert(M.explain(p[0]).includes('does not prove'));
+assert(M.explain({...p[0],dnsQuery:null,protocol:'TLS'}).includes('not visible'));
+assert(!('private_payload' in M.normalize(wrap([{...packet,private_payload:'SECRET'}])).analysis.packets[0]));
+assert.equal(M.review({devices:[],links:[]}).length,0);
+assert(M.review({devices:[{id:'a',name:'A',kind:'router',address:'1'}],links:[{id:'l',from:'a',to:'b',capacityMbps:'-1'}]}).length===2);
+assert.throws(()=>M.review({devices:[{}],links:[]}));
+assert.equal(M.summarize(M.normalize(wrap([{...packet,protocol:'__proto__',dnsQuery:'<img onerror=alert(1)>'}])).analysis.packets).domains[0].name,'<img onerror=alert(1)>');
+console.log('PASS: metadata validation, bounded import, payload stripping, conversations, evidence limits and design validation');

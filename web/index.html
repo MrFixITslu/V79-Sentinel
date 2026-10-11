@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="V79 Sentinel: read-only operations monitoring prototype.">
+  <title>V79 Sentinel | Command Center</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-symbol">V<span>79</span></div><div><strong>SENTINEL</strong><small>TECHNOLOGY COMMAND CENTER</small></div></div>
+    <div class="nav-heading">WORKSPACE</div>
+    <div class="nav-item selected">◈ &nbsp; Operations overview</div>
+    <div class="nav-item muted">◎ &nbsp; Network intelligence <small>planned</small></div>
+    <div class="nav-item muted">⬡ &nbsp; Security analysis <small>planned</small></div>
+    <a class="nav-item qa-sidebar" href="#qaPanel">▣ &nbsp; Automated QA <small>active</small></a>
+    <div class="nav-item muted">✳ &nbsp; AI assistant <small>planned</small></div>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-foot"><span class="small-circle"></span><div><strong>Local-only prototype</strong><small>Access bound to 127.0.0.1</small></div></div>
+  </aside>
+  <main>
+    <header class="topline">
+      <div class="eyebrow">VISION79 / INFRASTRUCTURE INTELLIGENCE</div>
+      <div class="top-actions"><span class="privacy">● PRIVATE LAB</span><button id="refresh" type="button" aria-label="Refresh status">↻ &nbsp; Refresh</button></div>
+    </header>
+    <section class="intro">
+      <div>
+        <div class="eyebrow">OVERVIEW</div>
+        <h1>Mission Control<span class="title-dot">.</span></h1>
+        <p>One clear view of your digital ecosystem.</p>
+      </div>
+      <div class="mode-panel"><div id="modeTag" class="tag">LOADING</div><small id="checked">Loading telemetry…</small></div>
+    </section>
+    <section id="demoNotice" class="warning-note" hidden><strong>DEMONSTRATION DATA</strong><span>These sample readings are illustrative. No network availability or security status is being claimed.</span></section>
+    <section id="cards" class="metrics" aria-label="Operational metrics">
+      <article class="metric"><div class="metric-caption">MONITORED SERVICES</div><div id="metricTotal" class="metric-value">—</div><div class="metric-foot">Configured HTTPS endpoints</div></article>
+      <article class="metric"><div class="metric-caption">HEALTHY ENDPOINTS</div><div id="metricHealthy" class="metric-value">—</div><div class="metric-foot">Successful checks</div></article>
+      <article class="metric"><div class="metric-caption">ATTENTION REQUIRED</div><div id="metricIssues" class="metric-value">—</div><div class="metric-foot">Warnings and failures</div></article>
+      <article class="metric"><div class="metric-caption">MEDIAN RESPONSE</div><div id="metricLatency" class="metric-value">—</div><div class="metric-foot">HTTPS head-request duration</div></article>
+    </section>
+    <div class="content-grid">
+      <section class="panel services">
+        <div class="panel-head"><div><h2>Service health</h2><p>Read-only availability checks</p></div><span class="small-tag">HTTPS</span></div>
+        <div class="table-head"><span>APPLICATION</span><span>STATUS</span><span>LATENCY</span><span>TLS EXPIRY</span></div>
+        <div id="serviceRows" class="service-rows" aria-live="polite">Loading…</div>
+        <div class="panel-foot"><span>Uptime based on scheduled samples, not continuous monitoring</span><a href="/api/report.csv" download="sentinel-report.csv">↓ Export CSV</a></div>
+      </section>
+      <section class="right-column">
+        <section class="panel analyst">
+          <div class="panel-head"><div><h2>Sentinel insights</h2><p>Automated rule-based summary</p></div><span class="ai-icon">✳</span></div>
+          <div class="insight"><span class="insight-icon">✳</span><p id="insight">Analyzing current measurements…</p></div>
+          <div class="insight-footer"><span>↳ Human-approved actions only</span></div>
+        </section>
+        <section class="panel event-panel">
+          <div class="panel-head"><div><h2>Activity feed</h2><p>Recent monitoring cycles</p></div></div>
+          <div id="events">Loading…</div>
+        </section>
+      </section>
+    </div>
+    <section class="panel qa-panel" id="qaPanel"><div class="panel-head"><div><h2>Automated browser QA</h2><p>Unauthenticated Chrome checks · desktop and mobile · public pages only</p></div><span class="small-tag" id="qaRunTag">AWAITING REPORT</span></div><div class="qa-summary" id="qaSummary">Loading QA results…</div><div class="qa-head"><span>APPLICATION</span><span>DESKTOP</span><span>MOBILE</span><span>SCREENSHOTS</span></div><div id="qaRows" class="qa-rows"></div><div class="qa-foot" id="qaFoot">Warnings may reflect expected authentication; no login or checkout flows are tested.</div></section>
+    <section class="qa-auth-panel"><div><strong>Protected workflow testing</strong><p id="qaAuthSummary">Checking test-account readiness…</p></div><span class="small-tag" id="qaAuthTag">NOT CONFIGURED</span></section>
+    <section class="panel trend-panel"><div class="panel-head"><div><h2>Response time trend</h2><p>Average measured HTTPS response time · hourly samples, UTC</p></div><span class="small-tag" id="sampleInfo">WAITING</span></div><div id="trendChart" class="trend-chart" aria-label="Response time trend visualisation"></div><div class="trend-foot"><div>● <span id="tlsSummary">Certificate validity pending</span></div><div>● <span id="uptimeSummary">Sampled uptime pending</span></div></div></section>
+    <section class="panel lab-panel"><div class="panel-head"><div><h2>New Dell readiness</h2><p>Targeted network observation · 192.168.100.136 only</p></div><span class="small-tag" id="labState">PENDING</span></div><div class="lab-details"><div><span class="lab-label">Reachability</span><strong id="labReach">Awaiting first check</strong></div><div><span class="lab-label">Remote SSH</span><strong id="labSSH">Not checked</strong></div><div><span class="lab-label">Ping</span><strong id="labPing">—</strong></div></div><p class="lab-foot" id="labMessage">No other network devices are probed in this section.</p></section>
+    <section class="roadmap"><div><strong>Coming next</strong><p>Isolated test-account workflow QA, advanced network diagnostics, and privacy-first AI explanations.</p></div><span class="small-tag">PHASE 4</span></section>
+    <footer>V79 DIGITAL • FROM IDEA TO ADVANTAGE <span>Sentinel v0.4 · Authentication-aware public QA</span></footer>
+  </main>
+</div>
+</body>
+</html>
