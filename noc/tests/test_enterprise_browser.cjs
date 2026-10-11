@@ -112,10 +112,12 @@ async function main(){
    const hero=document.querySelector('#missionControlPanel .v79-hero')?.getBoundingClientRect();
    const badge=document.querySelector('#nativeLiveBadge')?.getBoundingClientRect();
    const refresh=document.querySelector('#nativeRefresh')?.getBoundingClientRect();
-   return {heroHeight:hero?.height||0,badgeHeight:badge?.height||0,refreshHeight:refresh?.height||0};
+   const metrics=document.querySelector('#missionControlPanel .v79-stats')?.getBoundingClientRect();
+   return {heroHeight:hero?.height||0,badgeHeight:badge?.height||0,refreshHeight:refresh?.height||0,metricTop:metrics?.top||9999};
   });
   assert(mobileControls.heroHeight>150&&mobileControls.heroHeight<400,'Mobile Overview must stay compact and readable');
   assert(mobileControls.badgeHeight>22&&mobileControls.refreshHeight>20,'Mobile refresh and monitoring provenance must remain visible');
+  assert(mobileControls.metricTop<790,'First mobile monitoring cards should appear without scrolling far past the first viewport');
   assert.equal(await page.locator('#nativeServiceRows').evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),1,'Mobile service matrix must fit one column');
   assert.equal(await page.locator('#nativeQaRun').getAttribute('data-qa-freshness'),'historical','Historical QA provenance must remain visible on mobile');
   await page.screenshot({path:path.join(screenshots,'enterprise-mobile.png'),fullPage:true});
