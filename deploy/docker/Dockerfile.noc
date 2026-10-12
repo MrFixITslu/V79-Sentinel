@@ -6,6 +6,9 @@ RUN groupadd --system --gid 10001 sentinel \
     && useradd --system --uid 10001 --gid 10001 --home-dir /app sentinel \
     && mkdir -p /app/data \
     && chown 10001:10001 /app/data
+COPY deploy/docker/requirements-noc.txt /tmp/requirements-noc.txt
+RUN python -m pip install --no-cache-dir -r /tmp/requirements-noc.txt \
+    && rm /tmp/requirements-noc.txt
 COPY --chown=10001:10001 noc ./noc
 COPY --chown=10001:10001 web ./web
 COPY --chown=10001:10001 deploy/docker/bootstrap-private-pilot.py /app/bootstrap-private-pilot.py
