@@ -1,0 +1,5 @@
+# CI-ONLY overlay: make the legacy monitor synthetic instead of contacting
+# live V79 domains. Never pass this file for normal migration staging.
+services:
+  monitor:
+    command: ["python","sentinel.py","--bind","127.0.0.1","--port","8787"]
