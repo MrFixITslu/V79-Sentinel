@@ -8,6 +8,7 @@ RUN groupadd --system --gid 10001 sentinel \
     && chown 10001:10001 /app/data
 COPY --chown=10001:10001 noc ./noc
 COPY --chown=10001:10001 web ./web
+COPY --chown=10001:10001 deploy/docker/bootstrap-private-pilot.py /app/bootstrap-private-pilot.py
 USER 10001:10001
 EXPOSE 8788
 CMD ["python","-m","noc.server","--bind","127.0.0.1","--port","8788","--db","/app/data/noc-staging.sqlite3"]
