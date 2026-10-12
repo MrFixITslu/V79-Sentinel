@@ -363,7 +363,8 @@ class NocHandler(BaseHTTPRequestHandler):
                     c.execute("INSERT INTO sessions VALUES(?,?,?,?)",
                               (hashlib.sha256(token.encode()).hexdigest(),operator["id"],csrf,
                                timestamp()+SESSION_SECONDS))
-                secure="; Secure" if self.server.external_origin and self.headers.get("Origin")==self.server.external_origin else ""
+                secure=("; Secure" if self.server.external_origin.startswith("https://") and
+                        self.headers.get("Origin")==self.server.external_origin else "")
                 cookie=f"sentinel_noc={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age={SESSION_SECONDS}{secure}"
                 return self.send(200,{"signed_in":True},headers={"Set-Cookie":cookie})
             actor=self.authorized(mutate=True)
