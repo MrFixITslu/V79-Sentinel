@@ -4,6 +4,7 @@ These tests inspect only source/deployment configuration. They do not install
 Sentinel, access production devices, create operators or expose services.
 """
 from pathlib import Path
+import hashlib
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -19,6 +20,21 @@ class PrivateDockerPackagingTests(TestCase):
         self.assertEqual(SOURCE.resolve(), (ROOT / "web").resolve())
         for item in ("index.html", "app.js", "style.css"):
             self.assertTrue((SOURCE / item).is_file(), item)
+
+    def test_live_g221_native_ui_assets_unchanged(self):
+        # SHA-256 recorded from the ACTIVE clean G2.21 Acer checkout.
+        # This is a release migration parity gate, not a permanent UI design lock.
+        expected = {
+            "noc/web/index.html":
+                "95b890208d2416a8ba7de8f4ae8071ea97daf224798030970e045dbe7e2a34e3",
+            "noc/web/enterprise-center.js":
+                "efc2a2d7fc6929e0ef6bf10d89a8fc37340d99759bdbc24617c64da2e8da42e9",
+            "noc/web/mission-native.js":
+                "9d8d79170f8a9c432f0425ec99868f77775f481ad86a9abdd3c70816d4eb488f",
+        }
+        for relative, sha in expected.items():
+            with self.subTest(relative):
+                self.assertEqual(hashlib.sha256((ROOT / relative).read_bytes()).hexdigest(), sha)
 
     def test_three_services_share_loopback_and_proxy_network(self):
         compose = (DOCKER / "compose.yaml").read_text()
