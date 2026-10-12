@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import ipaddress
 import json
 from pathlib import Path
+import os
 import re
 import shutil
 import socket
@@ -20,7 +21,7 @@ def stamp():return datetime.now(timezone.utc).isoformat(timespec="seconds")
 def inventory():
     """Read the kernel neighbor table; no packets are sent for discovery."""
     ip=shutil.which("ip")
-    if not ip:return {"at":stamp(),"source":"Acer kernel neighbor table","devices":[],"available":False,"scope":"Local neighbor cache unavailable; not a complete network inventory."}
+    if not ip:return {"at":stamp(),"source":"Container namespace neighbor table" if os.environ.get("SENTINEL_MONITORING_CONTEXT")=="docker" else "Acer kernel neighbor table","devices":[],"available":False,"scope":"Local neighbor cache unavailable; not a complete network inventory."}
     result=subprocess.run([ip,"-j","neigh","show"],capture_output=True,text=True,timeout=3,check=True)
     if len(result.stdout)>262144:raise ValueError("Neighbor output exceeded safe limit")
     rows=json.loads(result.stdout);devices=[]
@@ -33,12 +34,12 @@ def inventory():
         if mac and not re.fullmatch(r"(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}",mac):continue
         state=row.get("state",[]);state=state if isinstance(state,list) else [str(state)]
         devices.append({"address":str(address),"mac":mac,"interface":interface,"state":state[:4],"evidence":"Kernel neighbor cache; device identity not verified"})
-    return {"at":stamp(),"source":"Acer kernel neighbor table","devices":devices,"available":True,"scope":"Only neighbors known to Acer. Cached/stale entries are not proof a device is online. No active scan; other VLANs may be unseen."}
+    return {"at":stamp(),"source":"Acer kernel neighbor table","devices":devices,"available":True,"scope":("Only neighbors known to the Docker network namespace. This is not LAN-wide discovery." if os.environ.get("SENTINEL_MONITORING_CONTEXT")=="docker" else "Only neighbors known to Acer. Cached/stale entries are not proof a device is online. No active scan; other VLANs may be unseen.")}
 def capabilities():
-    return {"source":"Acer local tools","targets":[{"name":k,"host":v[0],"port":v[1]} for k,v in TARGETS.items()],
+    return {"source":"Container local tools" if os.environ.get("SENTINEL_MONITORING_CONTEXT")=="docker" else "Acer local tools","targets":[{"name":k,"host":v[0],"port":v[1]} for k,v in TARGETS.items()],
             "tcp":True,"traceroute":bool(shutil.which("traceroute")),
             "capture":False,"pcapImport":False,
-            "captureReason":"Native capture bridge is not enabled. Wireshark dumpcap/tshark are not installed on this Acer; no capture privilege has been added.",
+            "captureReason":("Native capture bridge is disabled inside Docker; no host packet capture or privilege granted." if os.environ.get("SENTINEL_MONITORING_CONTEXT")=="docker" else "Native capture bridge is not enabled. Wireshark dumpcap/tshark are not installed on this Acer; no capture privilege has been added."),
             "retention":"Neighbor observations are read-only; imported investigation data stays in browser memory."}
 def diagnostic(data):
     if not isinstance(data,dict) or set(data)!={"target","kind"} or data.get("target") not in TARGETS or data.get("kind") not in ("tcp","route"):
