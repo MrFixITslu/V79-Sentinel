@@ -47,3 +47,17 @@ jobs:
             --tmpfs /var/cache/nginx:rw,mode=1777 \
             -v "$PWD/deploy/docker/nginx-private.conf:/etc/nginx/conf.d/default.conf:ro" \
             nginx:alpine nginx -t
+      - name: Run synthetic authenticated private stack (no public probes)
+        run: |
+          set -euo pipefail
+          docker network create proxy_network
+          python3 -B deploy/docker/select-private-port.py
+          files="-f deploy/docker/compose.yaml -f deploy/docker/compose.ci.yaml"
+          cleanup() {
+            docker compose --env-file deploy/docker/.env $files down || true
+            docker network rm proxy_network || true
+          }
+          trap cleanup EXIT
+          docker compose --env-file deploy/docker/.env $files run --rm --no-deps --entrypoint python noc /app/bootstrap-private-pilot.py
+          docker compose --env-file deploy/docker/.env $files up -d --wait
+          docker compose --env-file deploy/docker/.env $files exec -T noc python /app/smoke-private-pilot.py
