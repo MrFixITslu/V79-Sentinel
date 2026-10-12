@@ -54,10 +54,15 @@ jobs:
           python3 -B deploy/docker/select-private-port.py
           files="-f deploy/docker/compose.yaml -f deploy/docker/compose.ci.yaml"
           cleanup() {
+            code=$?
+            if [ "$code" -ne 0 ]; then
+              docker compose --env-file deploy/docker/.env $files ps -a || true
+              docker compose --env-file deploy/docker/.env $files logs --no-color --tail=35 || true
+            fi
             docker compose --env-file deploy/docker/.env $files down || true
             docker network rm proxy_network || true
           }
           trap cleanup EXIT
           docker compose --env-file deploy/docker/.env $files run --rm --no-deps --entrypoint python noc /app/bootstrap-private-pilot.py
-          docker compose --env-file deploy/docker/.env $files up -d --wait
+          docker compose --env-file deploy/docker/.env $files up -d --wait --wait-timeout 75
           docker compose --env-file deploy/docker/.env $files exec -T noc python /app/smoke-private-pilot.py
