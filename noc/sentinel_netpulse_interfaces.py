@@ -6,6 +6,7 @@ traffic, and cannot be compared between hosts.
 """
 from __future__ import annotations
 from pathlib import Path
+import os
 from threading import Lock
 import time
 
@@ -49,9 +50,12 @@ def sample_host_interfaces():
             })
         _PREVIOUS=current
         _PREVIOUS_TIME=now
+    is_container=os.environ.get("SENTINEL_MONITORING_CONTEXT")=="docker"
     return {
-      "source":"acer-host:/proc/net/dev",
+      "source":"container-netns:/proc/net/dev" if is_container else "acer-host:/proc/net/dev",
       "measurement":"actual operating-system interface byte counters",
-      "scope":"local Acer host only; includes all interface traffic, not captured packets",
+      "scope":("Sentinel Docker network namespace only; does not represent host, LAN or captured packets"
+               if is_container else
+               "local Acer host only; includes all interface traffic, not captured packets"),
       "interfaces":result,
     }
