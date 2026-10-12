@@ -68,3 +68,71 @@ class PrivateDockerPackagingTests(TestCase):
              patch("noc.sentinel_netpulse_interfaces.Path.read_text", return_value=fake):
             report = sample_host_interfaces()
         self.assertEqual(report["source"], "acer-host:/proc/net/dev")
+
+
+class PilotCookieOriginTests(TestCase):
+    def test_private_localhost_login_cookie_not_secure_over_http(self):
+        # A Secure cookie must not break private HTTP loopback staging.
+        import http.client
+        import tempfile
+        from noc.server import NocAPI, bootstrap
+        from noc.store import NocStore
+        from threading import Thread
+        with tempfile.TemporaryDirectory(prefix="sentinel-cookie-") as tmp:
+            db = Path(tmp) / "noc.sqlite3"
+            bootstrap(NocStore(db), "synthetic-admin", "synthetic-long-private-password")
+            server = NocAPI("127.0.0.1", 0, db)
+            server.external_origin = f"http://127.0.0.1:{server.server_port}"
+            thread = Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                import json
+                con = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+                con.request("POST", "/api/v1/login",
+                            body=json.dumps({"username": "synthetic-admin",
+                                             "password": "synthetic-long-private-password"}),
+                            headers={"Content-Type": "application/json",
+                                     "Origin": server.external_origin})
+                res = con.getresponse()
+                res.read()
+                cookie = res.getheader("Set-Cookie", "")
+                self.assertEqual(res.status, 200)
+                self.assertIn("HttpOnly", cookie)
+                self.assertNotIn("; Secure", cookie)
+                con.close()
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=5)
+
+    def test_https_operator_origin_retains_secure_cookie(self):
+        import http.client
+        import tempfile
+        import json
+        from threading import Thread
+        from noc.server import NocAPI, bootstrap
+        from noc.store import NocStore
+        with tempfile.TemporaryDirectory(prefix="sentinel-cookie-https-") as tmp:
+            db = Path(tmp) / "noc.sqlite3"
+            bootstrap(NocStore(db), "synthetic-admin", "synthetic-long-private-password")
+            server = NocAPI("127.0.0.1", 0, db)
+            server.external_origin = "https://sentinel.example.invalid"
+            thread = Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                con = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+                con.request("POST", "/api/v1/login",
+                            body=json.dumps({"username": "synthetic-admin",
+                                             "password": "synthetic-long-private-password"}),
+                            headers={"Content-Type": "application/json",
+                                     "Origin": server.external_origin})
+                res = con.getresponse()
+                res.read()
+                cookie = res.getheader("Set-Cookie", "")
+                self.assertEqual(res.status, 200)
+                self.assertIn("; Secure", cookie)
+                con.close()
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=5)
