@@ -7,22 +7,33 @@ Original monitor still runs from `/home/firelion/V79-Sentinel/sentinel` at port 
 Do not stop either Acer service until the full authenticated feature comparison and
 data/rollback validation pass.
 
-## Critical source gate — do not skip
+## Active G2.21 source baseline — preserved, not cut over
 
-GitHub private Sentinel baseline `b8d6c4588c21228523790902b57375f340b6d28a`
-matched `github-baseline-review` across eight inspected files, but NOT the
-active G2.21 worktree. Compared with that baseline, active G2.21 differs in:
-- `noc/web/index.html`
-- `noc/web/enterprise-center.js`
-- `noc/web/mission-native.js`
+The Acer's running NOC was independently identified as:
+`/home/firelion/V79-Sentinel/g221-mobilefix-isolated-review`
+at **exact Git commit `e544c8db2b1fda73a4078ece988fc70d4b37ceca`**,
+with no tracked modifications. The original monitor continues to run from the
+older `.../sentinel` checkout.
 
-The canonical legacy Acer checkout is older still and missing several native
-Command Center assets. This Docker PR is based on the GitHub baseline to prepare
-a safe layout; **it is NOT an approved replacement for active G2.21**.
-First audit tracked/untracked active source, run Acer tests and authenticated
-screenshots, then cherry-pick only the audited mobile UI changes into a reviewed
-private GitHub release branch. Never copy .env, database, credentials, tokens,
-private keys, screenshots, raw packet captures or user data to source control.
+**This release branch is based directly on that active G2.21 commit**, not
+the older GitHub main `b8d6c458`. The complete original committed G2.21
+native Command Center, mobile UI, network diagnostics and regression tests
+are preserved. The Docker changes add packaging and limited runtime-portable
+paths, a loopback HTTP cookie condition, and truthful container-only sensor labels.
+The three original Acer frontend SHA-256 values for `noc/web/index.html`,
+`noc/web/enterprise-center.js` and `noc/web/mission-native.js` are
+enforced by `noc.tests.test_docker_staging_contract`.
+
+The user's prior Acer inventory **did not include untracked files**. Before
+cutover, inspect the active worktree's untracked source/config additions (without
+publishing secrets) and separately back up its SQLite/evidence and original
+systemd service definitions. A source hash match does not verify database,
+screenshots, authenticated browser behavior or hardware-specific collectors.
+
+**Do not stop or replace either Acer service yet.** Keep credentials,
+operator sessions, databases, telemetry, PCAPs and browser QA evidence outside
+GitHub. Do not copy .env, database, passwords, tokens or private keys into
+source control. The Docker stack uses synthetic operators and new empty volumes.
 
 ## Network topology
 
@@ -65,7 +76,7 @@ Nginx Proxy Manager container (proxy_network)
 - Browser QA requires external Chrome/Playwright and is not included in these
   Docker images; historical Acer QA remains separate.
 
-## Server-side preflight — only after G2.21 source parity passes
+## Server-side preflight — only after source parity, backup and QA acceptance
 
 1. Confirm a *tested*, independently restorable backup of both Acer SQLite
    databases and original systemd unit files. Retain original services.
