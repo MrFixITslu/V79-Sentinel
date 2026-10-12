@@ -90,15 +90,24 @@ NEW staging database, **not** a copy of the existing Acer NOC operator DB.
 Do not pass a production password on a command line, in Docker env or in chat.
 Generate the test credential **inside the staging volume** while it is mounted
 by a disposable NOC container (UID 10001), and keep the password file 0600.
-Bootstrap using `noc.server --bootstrap-operator` and
-`--bootstrap-password-file`. Do not automatically overwrite an existing
-operator or password file. The service refuses uninitialized login data.
+The bundled bootstrap refuses to overwrite an existing operator or password file.
+The service refuses uninitialized login data.
 
-Only after a successful bootstrap, start the three pilot services using:
+After source parity is approved, use these exact staging-only commands:
 ```bash
-docker compose --env-file deploy/docker/.env -f deploy/docker/compose.yaml up -d
+docker compose --env-file deploy/docker/.env -f deploy/docker/compose.yaml \
+  run --rm --no-deps --entrypoint python noc /app/bootstrap-private-pilot.py
+docker compose --env-file deploy/docker/.env -f deploy/docker/compose.yaml \
+  up -d --wait --wait-timeout 90
+docker compose --env-file deploy/docker/.env -f deploy/docker/compose.yaml \
+  exec -T noc python /app/smoke-private-pilot.py
 docker compose --env-file deploy/docker/.env -f deploy/docker/compose.yaml ps
 ```
+Success must include `SYNTHETIC_PILOT_BOOTSTRAPPED` and
+`SENTINEL_SYNTHETIC_DOCKER_AUTH_SMOKE_PASS`. No password is logged.
+The staging password is stored only inside the isolated NOC volume and must
+be viewed privately by the owner on the server for browser acceptance. Do not
+paste it into this chat, GitHub, screenshots or support logs.
 
 Do not change running V79 Hub, Tiquet, WiPay, Marketing, POS, or NPM routing.
 Observe RAM/swap and image identities before/after.
