@@ -2,10 +2,12 @@ name: Sentinel owned-service evidence contract
 
 on:
   pull_request:
-    branches: [feature/sentinel-g221-private-docker-parity-20261012]
+    branches: [feature/sentinel-g221-private-docker-parity-20261012, feature/p1-owned-service-evidence-gate-20261015]
     paths:
       - "noc/owned_https_evidence_gate.py"
       - "noc/tests/test_owned_https_evidence_gate.py"
+      - "noc/signed_owned_evidence.py"
+      - "noc/tests/test_signed_owned_evidence.py"
       - ".github/workflows/sentinel-owned-service-evidence.yml"
   workflow_dispatch:
 
@@ -21,14 +23,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Assert advisory only and reject stale, unowned or simulated results
+      - name: Install pinned Ed25519 verification dependency
+        run: python3 -m pip install 'cryptography==45.0.7'
+      - name: Assert advisory only, source signature, replay and fake-service denial
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: |
           python3 -B -m unittest noc.tests.test_owned_https_evidence_gate -v
+          python3 -B -m unittest noc.tests.test_signed_owned_evidence -v
           python3 -B - <<'PY'
           import ast, pathlib
-          for file in ("noc/owned_https_evidence_gate.py", "noc/tests/test_owned_https_evidence_gate.py"):
+          for file in ("noc/owned_https_evidence_gate.py", "noc/tests/test_owned_https_evidence_gate.py",
+                       "noc/signed_owned_evidence.py", "noc/tests/test_signed_owned_evidence.py"):
               ast.parse(pathlib.Path(file).read_text(encoding="utf-8"))
           print("SYNTAX_CHECK_PASS")
           PY
