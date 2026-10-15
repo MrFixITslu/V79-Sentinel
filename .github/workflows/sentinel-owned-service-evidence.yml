@@ -1,0 +1,34 @@
+name: Sentinel owned-service evidence contract
+
+on:
+  pull_request:
+    branches: [feature/sentinel-g221-private-docker-parity-20261012]
+    paths:
+      - "noc/owned_https_evidence_gate.py"
+      - "noc/tests/test_owned_https_evidence_gate.py"
+      - ".github/workflows/sentinel-owned-service-evidence.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  owned-service-readonly-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Assert advisory only and reject stale, unowned or simulated results
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 -B -m unittest noc.tests.test_owned_https_evidence_gate -v
+          python3 -B - <<'PY'
+          import ast, pathlib
+          for file in ("noc/owned_https_evidence_gate.py", "noc/tests/test_owned_https_evidence_gate.py"):
+              ast.parse(pathlib.Path(file).read_text(encoding="utf-8"))
+          print("SYNTAX_CHECK_PASS")
+          PY
