@@ -2,12 +2,14 @@ name: Sentinel owned-service evidence contract
 
 on:
   pull_request:
-    branches: [feature/sentinel-g221-private-docker-parity-20261012, feature/p1-owned-service-evidence-gate-20261015]
+    branches: [feature/sentinel-g221-private-docker-parity-20261012, feature/p1-owned-service-evidence-gate-20261015, feature/p1-signed-owned-observation-20261015]
     paths:
       - "noc/owned_https_evidence_gate.py"
       - "noc/tests/test_owned_https_evidence_gate.py"
       - "noc/signed_owned_evidence.py"
       - "noc/tests/test_signed_owned_evidence.py"
+      - "noc/owned_replay_checkpoint.py"
+      - "noc/tests/test_owned_replay_checkpoint.py"
       - ".github/workflows/sentinel-owned-service-evidence.yml"
   workflow_dispatch:
 
@@ -31,10 +33,12 @@ jobs:
         run: |
           python3 -B -m unittest noc.tests.test_owned_https_evidence_gate -v
           python3 -B -m unittest noc.tests.test_signed_owned_evidence -v
+          python3 -B -m unittest noc.tests.test_owned_replay_checkpoint -v
           python3 -B - <<'PY'
           import ast, pathlib
           for file in ("noc/owned_https_evidence_gate.py", "noc/tests/test_owned_https_evidence_gate.py",
-                       "noc/signed_owned_evidence.py", "noc/tests/test_signed_owned_evidence.py"):
+                       "noc/signed_owned_evidence.py", "noc/tests/test_signed_owned_evidence.py",
+                       "noc/owned_replay_checkpoint.py", "noc/tests/test_owned_replay_checkpoint.py"):
               ast.parse(pathlib.Path(file).read_text(encoding="utf-8"))
           print("SYNTAX_CHECK_PASS")
           PY
