@@ -42,3 +42,495 @@ select:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid #8b
 
 body:not(.enterprise-analyst) .enterprise-technical{display:none}
 body:not(.enterprise-analyst) #enterprisePackets th:nth-child(2),body:not(.enterprise-analyst) #enterprisePackets td:nth-child(2),body:not(.enterprise-analyst) #enterprisePackets th:nth-child(5),body:not(.enterprise-analyst) #enterprisePackets td:nth-child(5){display:none}
+
+/* G2.19: unified native operations workspace. Pure presentation: no IDs,
+   application state, monitoring classifications or command permissions change. */
+:root{
+  --v79-canvas:#070f1b;--v79-panel:#101e30;--v79-panel-raised:#14263b;
+  --v79-stroke:#29445c;--v79-copy:#e9f2fc;--v79-muted:#afc3d9;
+  --v79-focus:#8ddfdc;
+}
+body{
+  background:radial-gradient(ellipse 700px 460px at 78% -14%,#17425948,transparent 72%),
+             linear-gradient(165deg,#081525,var(--v79-canvas) 62%);
+  color:var(--v79-copy);
+}
+.shell{grid-template-columns:244px minmax(0,1fr)}
+.sidebar{
+  background:linear-gradient(175deg,#11243a,#0a1828 46%,#081321);
+  border-right:1px solid #294258;
+  padding:26px 16px 18px;
+  box-shadow:14px 0 38px #02091223;
+}
+.logo{padding:10px 7px 15px;gap:13px}
+.logo strong{font-size:14px;letter-spacing:.055em}
+.logo-mark{
+  display:grid;place-items:center;flex:none;width:44px;height:44px;
+  background:linear-gradient(145deg,#236781,#113247);
+  color:#c6fffa;border:1px solid #368da0;box-shadow:0 8px 20px #0004;
+  font-size:26px;text-align:center;
+}
+.logo small{font-size:10px;letter-spacing:.13em;color:#a6c4d4}
+.nav{gap:5px}
+.nav-item{
+  display:flex;align-items:center;min-height:44px;
+  border-radius:11px;border:1px solid transparent;padding:11px 14px;
+  line-height:1.4;font-size:13px;font-weight:620;color:#adbfda;
+  transition:background-color .14s ease,border-color .14s ease,color .14s ease;
+}
+.nav-item.active,.nav-item[aria-current="page"]{
+  color:#eefeff;background:linear-gradient(98deg,#174c67,#14334b);
+  border-color:#39718a;box-shadow:inset 3px 0 #62e1d3;
+}
+.nav-item:hover,.nav-item:focus-visible{background:#1b3c57;color:#f4fbff}
+.sidebar-bottom{
+  padding:15px 10px;border-top:1px solid #2b4459;
+  font-size:11px;color:#bfd3df;line-height:1.7;
+}
+.sidebar-bottom small{color:#8eaec2}
+main{max-width:1820px;padding:30px clamp(20px,3vw,48px) 72px}
+header{
+  align-items:center;gap:18px;
+  padding:0 0 22px;border-bottom:1px solid #2c4357;margin-bottom:20px;
+}
+header h1{font-size:clamp(24px,2.2vw,32px);letter-spacing:-.045em}
+header .subtitle{color:#a8bfd2;font-size:13px;line-height:1.6}
+.header-right{gap:10px}
+.header-right>.pill{
+  max-width:225px;color:#add7e7;background:#133047;
+  border-color:#38617a;border-radius:999px;line-height:1.4;padding:9px 13px;
+}
+.enterprise-view-switch select{
+  min-height:39px;border-color:#416580;
+  background:#142b42;color:#eff8ff;border-radius:10px;
+}
+.enterprise-route-hidden{display:none!important}
+.enterprise-page{margin-top:18px}
+.notice{
+  border-radius:12px;padding:15px 20px;
+  color:#c3dced;background:#113047;border:1px solid #35617a;
+  box-shadow:inset 3px 0 #6ec1e5;line-height:1.65;
+}
+.v79-dashboard{gap:17px}
+.v79-hero{
+  background:radial-gradient(ellipse 400px 250px at 100% 10%,#275e7766,transparent),
+             linear-gradient(112deg,#17354b,#102439 68%,#0d2136);
+  border:1px solid #396079;border-radius:17px;
+  padding:27px clamp(22px,3vw,38px);min-height:190px;
+  box-shadow:0 13px 34px #0208172c;
+}
+.v79-hero h2{
+  font-size:clamp(26px,2.4vw,36px);line-height:1.12;letter-spacing:-.045em;
+}
+.v79-hero h2 span{color:#8ee9e1}
+.v79-hero p:not(.eyebrow){max-width:650px;line-height:1.65}
+.v79-hero-visual{opacity:.9;max-width:330px;justify-self:end}
+.v79-hero-visual svg{max-height:155px}
+.v79-freshness{font-size:12px;color:#bed3e4}
+.v79-hero-actions{gap:9px;margin-top:17px}
+.v79-chip{border-radius:999px;min-height:29px;letter-spacing:.025em}
+.v79-stats{gap:13px}
+.v79-stat{
+  min-height:137px;padding:18px 20px;border-radius:14px;
+  background:linear-gradient(155deg,#152b42,#101e30 76%);
+  border:1px solid var(--v79-stroke);box-shadow:0 6px 24px #02091421;
+}
+.v79-stat>span{color:#becfe3;font-size:12px;font-weight:650}
+.v79-stat>strong{font-size:clamp(27px,2.3vw,34px);letter-spacing:-.055em}
+.v79-stat>small{color:#94b1ca;font-size:11px}
+.v79-stat-icon{border-radius:10px}
+.v79-grid-two{gap:16px}
+.v79-pane,.content-card,.metric.card{
+  border:1px solid #2e4861;border-radius:15px;
+  background:linear-gradient(180deg,#12243a,#101d2f 85%);
+  box-shadow:0 9px 26px #030b1927;
+}
+.v79-pane{padding:clamp(17px,1.6vw,24px)}
+.v79-pane h3,#missionControlPanel h3{
+  font-size:17px;line-height:1.4;color:#f0f7ff;letter-spacing:-.015em;
+}
+.v79-pane-header{padding-bottom:13px;border-bottom:1px solid #2b455d;margin-bottom:14px}
+.v79-row{
+  padding:13px 5px;gap:12px;
+  border-bottom:1px solid #29415b;background:transparent;
+}
+.v79-row-info strong{font-size:13px;font-weight:680;color:#e5f3ff}
+.v79-row-info small,.v79-pane-note,.v79-text-link{color:#a8c0d9;font-size:12px}
+.v79-chart-container{
+  background:linear-gradient(180deg,#13283d,#0e2134);
+  border:1px solid #32516b;border-radius:13px;
+}
+.v79-insight{
+  background:#143246;border-color:#32657a;border-radius:11px;
+}
+.v79-insight strong{color:#b8ecf6}
+.v79-table{font-size:12px}
+.v79-table th{color:#b8cce0;font-weight:720}
+.v79-table td{line-height:1.5}
+.v79-table-scroll,.table-wrap{max-width:100%;overflow-x:auto}
+.enterprise-device{
+  border-radius:12px;background:linear-gradient(145deg,#1a344d,#14273d);
+  border-color:#365470;min-height:124px;
+}
+.enterprise-map-host{
+  background:linear-gradient(110deg,#1c4b68,#17405c);
+  border-color:#4e86a3;border-radius:12px;
+  box-shadow:0 8px 20px #0003;
+}
+.enterprise-explanation{
+  border-radius:0 12px 12px 0;background:#17384f;
+  border-left-color:#80d4e8;
+}
+.enterprise-controls input,.enterprise-controls select{
+  background:#0d2034;border-color:#3d607e;border-radius:10px;
+}
+.enterprise-controls button{border-radius:10px}
+.enterprise-capture-note{border-radius:0 11px 11px 0;color:#f0d9a6}
+button:focus-visible,.nav-item:focus-visible,
+input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{
+  outline:3px solid var(--v79-focus);outline-offset:3px;
+}
+@media(max-width:1180px){
+  .shell{grid-template-columns:210px minmax(0,1fr)}
+  .v79-hero-visual{max-width:245px}
+  .v79-grid-two{grid-template-columns:1fr}
+}
+@media(max-width:800px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{
+    position:static;height:auto;padding:14px 16px 12px;
+    box-shadow:none;border-right:0;border-bottom:1px solid #34506a;
+  }
+  .sidebar .divider,.sidebar-bottom{display:none}
+  .sidebar .nav{
+    display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;
+    padding:4px 1px 9px;scrollbar-width:thin;scroll-snap-type:x proximity;
+  }
+  .sidebar .nav-item{
+    flex:0 0 auto;min-height:43px;white-space:nowrap;
+    scroll-snap-align:start;padding:10px 13px;
+  }
+  main{padding:20px 17px 46px}
+  header{align-items:flex-start;flex-direction:column;gap:12px}
+  .header-right{width:100%;justify-content:flex-start}
+  .v79-hero{grid-template-columns:1fr;padding:24px}
+  .v79-hero-visual{display:none}
+  .enterprise-controls{flex-direction:column;align-items:stretch}
+  .enterprise-controls label{min-width:0;width:100%}
+}
+@media(max-width:540px){
+  .logo{padding:4px 4px 12px}
+  main{padding:18px 13px 44px}
+  .v79-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .v79-stat{min-height:125px;padding:14px 12px}
+  .v79-stat>strong{font-size:29px}
+  .v79-stat-icon{width:29px;height:29px}
+  .v79-hero{padding:21px 18px;min-height:0}
+  .v79-hero h2{font-size:26px}
+  .v79-pane,.content-card{padding:16px}
+  .v79-pane-header{align-items:flex-start}
+  .header-right>.pill{max-width:100%}
+  .v79-row{align-items:flex-start}
+}
+@media(prefers-reduced-motion:reduce){
+  .nav-item{transition:none}
+}
+
+/* G2.19: unavailable actions must not look enabled in the operator UI. */
+button:disabled,
+.enterprise-controls button:disabled{
+  opacity:.48;
+  cursor:not-allowed;
+  filter:saturate(.48);
+  box-shadow:none;
+}
+.enterprise-controls button:disabled:hover{filter:saturate(.48)}
+/* The footer belongs after the selected page, not between route panels. */
+#appSection > footer{
+  margin-top:20px;
+  padding-top:14px;
+  border-top:1px solid #263e54;
+  color:#91abc3;
+}
+
+/* G2.20: operator-first information density. Pure presentation; every status,
+   source label, chart, button, security warning and route stays available. */
+@media (min-width:801px){
+  main{padding-top:22px}
+  header{padding-bottom:14px;margin-bottom:14px}
+  #appSection > .notice{padding:11px 16px;line-height:1.45}
+  .v79-dashboard{gap:12px}
+  #missionControlPanel .v79-hero{
+    min-height:0;
+    padding:15px clamp(19px,2vw,26px);
+    gap:12px;
+    align-items:center;
+    grid-template-columns:minmax(0,1fr) minmax(115px,180px);
+  }
+  #missionControlPanel .v79-hero h2{
+    font-size:clamp(24px,2vw,30px);
+    line-height:1.13;
+    margin:0 0 6px;
+  }
+  #missionControlPanel .v79-hero p:not(.eyebrow){
+    font-size:12px;line-height:1.48;
+    max-width:750px;margin:5px 0;
+  }
+  #missionControlPanel .v79-hero-actions{margin-top:9px;gap:8px}
+  #missionControlPanel .v79-hero-visual{max-width:180px}
+  #missionControlPanel .v79-hero-visual svg{max-height:111px}
+  #missionControlPanel .v79-hero-visual small{font-size:9px;letter-spacing:.04em}
+  .v79-stats{gap:11px}
+  .v79-stat{min-height:112px;padding:13px 17px}
+  .v79-stat > span{margin-bottom:5px}
+  .v79-stat > strong{font-size:clamp(27px,2vw,31px)}
+  .v79-stat > small{margin-top:5px}
+}
+@media (max-width:800px){
+  #appSection > .notice{padding:11px 14px;line-height:1.5}
+  .v79-dashboard{gap:12px}
+  #missionControlPanel .v79-hero{min-height:0;padding:19px;gap:8px}
+  #missionControlPanel .v79-hero h2{font-size:clamp(24px,5vw,29px);margin-bottom:8px}
+  #missionControlPanel .v79-hero p:not(.eyebrow){line-height:1.48}
+  #missionControlPanel .v79-hero-actions{margin-top:11px;gap:8px}
+}
+@media (max-width:540px){
+  .v79-stat{min-height:116px}
+}
+
+/* G2.21 — visually distinct evidence-led operations board.
+   No live API/data semantics, route ids, permissions or monitoring targets change. */
+#missionControlPanel.v79-dashboard{
+  gap:15px;
+}
+#missionControlPanel .v79-ops-header{
+  display:flex;
+  align-items:center;
+  min-height:0;
+  gap:16px;
+  padding:19px clamp(18px,2vw,28px);
+  border:1px solid #38667a;
+  border-left:5px solid #66dacf;
+  background:linear-gradient(95deg,#173b46,#10263a 47%,#102039);
+  box-shadow:0 4px 16px #020b1829;
+}
+#missionControlPanel .v79-ops-header .v79-hero-copy{
+  min-width:0;flex:1;
+}
+#missionControlPanel .v79-ops-header .eyebrow{
+  color:#91ede0;letter-spacing:.12em;
+}
+#missionControlPanel .v79-ops-header h2{
+  margin:4px 0 4px;
+  font-size:clamp(23px,2.1vw,30px);
+  line-height:1.13;
+  letter-spacing:-.025em;
+}
+#missionControlPanel .v79-ops-header h2 span{
+  color:#9ed9f5;
+}
+#missionControlPanel .v79-ops-header p:not(.eyebrow){
+  margin:6px 0;
+  max-width:820px;
+  font-size:12px;
+  color:#b8cddd;
+}
+#missionControlPanel .v79-ops-header .v79-hero-visual{
+  display:none!important;
+}
+#missionControlPanel .v79-ops-header .v79-hero-actions{
+  margin-top:10px;
+  display:flex;align-items:center;gap:11px;
+}
+#missionControlPanel .v79-stats{
+  gap:12px;
+}
+#missionControlPanel .v79-stat{
+  border-radius:9px;
+  border:1px solid #31506a;
+  border-top:3px solid #4396ba;
+  background:linear-gradient(160deg,#162f44,#101d30);
+  min-height:115px;
+  padding:14px 18px;
+  box-shadow:0 4px 12px #0002;
+}
+#missionControlPanel .v79-stat:nth-child(2){border-top-color:#3fa897}
+#missionControlPanel .v79-stat:nth-child(3){border-top-color:#c69c50}
+#missionControlPanel .v79-stat:nth-child(4){border-top-color:#568fcf}
+#missionControlPanel .v79-stat>span{font-size:11px;letter-spacing:.02em}
+#missionControlPanel .v79-stat>strong{font-size:clamp(29px,2.4vw,35px)}
+#missionControlPanel .v79-grid-two.v79-service-evidence-grid{
+  grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);
+  align-items:start;
+}
+#missionControlPanel .v79-grid-two.v79-activity-evidence-grid{
+  grid-template-columns:minmax(0,0.8fr) minmax(0,1.2fr);
+  align-items:start;
+}
+#missionControlPanel .v79-pane{
+  border-radius:12px;
+  box-shadow:0 4px 17px #020b192a;
+}
+#nativeServiceRows.v79-dense-list{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+  max-height:none;
+  overflow:visible;
+  padding:0;
+}
+#nativeServiceRows .v79-row{
+  display:flex;
+  align-items:flex-start;
+  flex-direction:column;
+  justify-content:space-between;
+  gap:12px;
+  min-width:0;
+  min-height:112px;
+  padding:15px;
+  border:1px solid #31546b;
+  border-left:3px solid #4a86a3;
+  border-radius:9px;
+  background:linear-gradient(142deg,#19354a,#122437);
+}
+#nativeServiceRows .v79-row-info{min-width:0}
+#nativeServiceRows .v79-row-info strong{font-size:14px}
+#nativeServiceRows .v79-row-info small{font-size:11px;line-height:1.6}
+#nativeServiceRows .v79-state{
+  align-self:flex-start;
+  font-size:10px;
+  border-radius:6px;
+}
+#nativeTrend{position:relative;border-color:#42677b}
+#nativeTrend .v79-svg{height:270px}
+#nativeActivity.v79-dense-list{
+  display:grid;
+  gap:0;
+  max-height:490px;
+  overflow-y:auto;
+  border-left:1px solid #36556b;
+  margin-left:10px;
+  padding-left:14px;
+}
+#nativeActivity .v79-row{
+  position:relative;
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  margin:0 0 10px;
+  padding:10px 11px;
+  border:1px solid #304a60;
+  border-radius:8px;
+  background:#142a3d;
+}
+#nativeActivity .v79-row:before{
+  position:absolute;
+  left:-21px;
+  top:18px;
+  width:9px;height:9px;
+  border-radius:999px;
+  background:#5fb8c5;
+  border:2px solid #0c1e2d;
+  content:"";
+}
+#nativeActivity .v79-row-info small{font-size:11px}
+#nativeActivity .v79-state{font-size:10px}
+#nativeQaRun[data-qa-freshness="historical"]{
+  padding:8px 11px;
+  margin-top:8px;
+  background:#32291f;
+  border:1px solid #866039;
+  border-left:3px solid #e9b365;
+  border-radius:7px;
+  color:#ffdca2;
+  font-weight:650;
+}
+#nativeQaRun[data-qa-freshness="recent"]{
+  border-left:3px solid #50bfae;
+  padding-left:9px;
+}
+.v79-source-disclaimer{
+  color:#a8bcd0!important;
+  font-size:11px!important;
+  line-height:1.65!important;
+  font-weight:400!important;
+}
+.v79-lab #nativeDell{font-size:11px;max-width:100%;overflow-wrap:anywhere}
+.v79-activity-evidence-grid .v79-table th{font-size:10px}
+.v79-activity-evidence-grid .v79-table td{font-size:11px}
+@media(max-width:1180px){
+  #missionControlPanel .v79-grid-two.v79-service-evidence-grid,
+  #missionControlPanel .v79-grid-two.v79-activity-evidence-grid{
+    grid-template-columns:minmax(0,1fr);
+  }
+}
+@media(max-width:800px){
+  #missionControlPanel .v79-ops-header{padding:17px}
+  #missionControlPanel .v79-ops-header h2{font-size:25px}
+  #missionControlPanel .v79-ops-header .v79-hero-actions{flex-wrap:wrap}
+  #nativeTrend .v79-svg{height:210px}
+}
+@media(max-width:540px){
+  #nativeServiceRows.v79-dense-list{grid-template-columns:minmax(0,1fr)}
+  #nativeServiceRows .v79-row{min-height:0;gap:9px}
+  #missionControlPanel .v79-ops-header .v79-hero-actions>*{max-width:100%}
+}
+
+/* G2.21 screenshot review corrections: balance source-backed matrix with chart,
+   and keep operational status visible quickly on small screens. */
+@media(max-width:540px){
+  .sidebar{padding:8px 12px 7px}
+  .sidebar .logo{padding:1px 3px 5px}
+  .sidebar .nav{padding:2px 0 4px;gap:6px}
+  .sidebar .nav-item{min-height:40px;padding:8px 11px}
+  main{padding:12px 12px 36px}
+  header{gap:7px;padding-bottom:11px;margin-bottom:11px}
+  header h1{font-size:25px}
+  header .eyebrow{font-size:9px;margin-bottom:2px}
+  header .subtitle{font-size:11px}
+  .header-right{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:7px;
+    align-items:end;
+  }
+  .header-right .enterprise-view-switch{grid-column:1;grid-row:1;width:100%}
+  .header-right .enterprise-view-switch label{font-size:11px;gap:4px}
+  .header-right .enterprise-view-switch select{min-height:36px}
+  .header-right #logout{grid-column:2;grid-row:1;margin:0;min-height:36px}
+  .header-right>.pill{
+    grid-column:1/-1;grid-row:2;
+    justify-self:start;
+    padding:6px 10px;
+    font-size:9px;
+  }
+  #appSection>.notice{
+    padding:9px 11px;
+    font-size:11px;
+    line-height:1.38;
+  }
+  #missionControlPanel .v79-ops-header{
+    padding:12px 13px;
+  }
+  #missionControlPanel .v79-ops-header h2{
+    font-size:21px;line-height:1.15;
+  }
+  #missionControlPanel .v79-ops-header .eyebrow{
+    font-size:9px;letter-spacing:.085em;
+  }
+  #missionControlPanel .v79-ops-header p:not(.eyebrow){
+    display:none;
+  }
+  #missionControlPanel .v79-ops-header .v79-hero-actions{
+    margin-top:8px;gap:6px;
+  }
+  #missionControlPanel .v79-ops-header .v79-hero-actions button{
+    padding:6px 10px;
+  }
+  #missionControlPanel .v79-ops-header .v79-freshness{
+    font-size:10px;
+  }
+  #missionControlPanel .v79-stats{gap:8px}
+  #missionControlPanel .v79-stat{min-height:105px;padding:11px}
+  #missionControlPanel .v79-stat>strong{font-size:26px}
+}

@@ -17,6 +17,8 @@ class NetworkLabTests(unittest.TestCase):
     def test_no_capture_privileges_or_fabricated_pcap_support(self):
         self.assertFalse(capabilities()['capture'])
         self.assertFalse(capabilities()['pcapImport'])
+        self.assertIn("not enabled", capabilities()['captureReason'])
+        self.assertNotIn("not installed", capabilities()['captureReason'])
 
     def test_unapproved_target_and_kind_rejected_before_process(self):
         with patch('noc.sentinel_network_lab.subprocess.run') as run:

@@ -1,0 +1,2 @@
+# Signed Edge verification/approval modules import this at NOC process startup.
+cryptography==46.0.3

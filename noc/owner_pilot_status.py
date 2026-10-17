@@ -10,10 +10,12 @@ from datetime import datetime,timezone
 from .owner_mock_incidents import summary as mock_incident_summary
 import json
 from pathlib import Path
+import os
 import stat
 import time
 
-PILOT_ROOT=Path("/home/firelion/V79-Sentinel/secure-edge-transport-staging/data/v79-owned-pilot")
+PILOT_ROOT=Path(os.environ.get("SENTINEL_OWNER_PILOT_ROOT",
+    "/home/firelion/V79-Sentinel/secure-edge-transport-staging/data/v79-owned-pilot"))
 APP_NAMES=frozenset(("Website","Hub","Tiquet","FFPRO","Marketing",
                      "Academy","POS","Gaming Studio J"))
 # Fixed first-party canaries verified on the Acer. Never accept URL/path

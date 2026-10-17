@@ -1,10 +1,34 @@
 """Full original Mission Control inside authenticated NOC: read-only boundaries."""
 import unittest
+from pathlib import Path
+from io import BytesIO
 from unittest.mock import patch
 from noc.tests.test_mission_control_bridge import MissionHttpTests
-from noc.sentinel_mission_full import read_only_resource,SCREENSHOT
+from noc.sentinel_mission_full import read_only_resource,SCREENSHOT,API,UPSTREAM
 
 class FullMissionControlTests(MissionHttpTests):
+    def setUp(self):
+        # Repo-local fixture, not the owner's Acer runtime or legacy collector.
+        super().setUp()
+        source = Path(__file__).resolve().parents[2] / "web"
+        self.assertTrue((source / "index.html").is_file())
+        source_patch = patch("noc.sentinel_mission_full.SOURCE", source)
+        source_patch.start()
+        self.addCleanup(source_patch.stop)
+
+        allowed = {UPSTREAM + remote for remote, _mime, _limit in API.values()}
+
+        def synthetic_upstream(url, timeout=2.5):
+            if url not in allowed or timeout > 2.5:
+                raise AssertionError("Unapproved non-local Mission Control request")
+            response = BytesIO(b"{}")
+            response.status = 200
+            return response
+
+        upstream_patch = patch("noc.sentinel_mission_full.urlopen", side_effect=synthetic_upstream)
+        upstream_patch.start()
+        self.addCleanup(upstream_patch.stop)
+
     def test_full_dashboard_requires_authenticated_noc_session(self):
         for path in ("/mission-control/","/mission-control/app.js",
                      "/mission-control/style.css","/mission-control/api/status",

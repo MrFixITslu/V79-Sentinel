@@ -62,8 +62,10 @@ function renderStatus(s,qa){
  put("nativeServices",services.length);put("nativeHealthy",healthy);put("nativeDegraded",unhealthy);
  put("nativeLatency",Math.round(avg)+" ms");
  put("nativeFreshness",s.last_check?"Latest check: "+when(s.last_check):"No successful monitoring cycle yet");
- const badge=q("nativeLiveBadge");badge.textContent=s.mode==="live"?"LIVE MEASUREMENTS":"MONITORING STATUS UNKNOWN";
- badge.className="v79-chip "+(s.mode==="live"?"v79-chip-ok":"v79-chip-warn");
+ const badge=q("nativeLiveBadge");
+ const observed=s.mode==="live"&&services.length>0&&Boolean(s.last_check);
+ badge.textContent=observed?"LIVE MEASUREMENTS":"MONITORING STATUS UNVERIFIED";
+ badge.className="v79-chip "+(observed?"v79-chip-ok":"v79-chip-warn");
  const table=clear("nativeServiceRows");
  for(const service of services){
   const d=[service.http?"HTTP "+service.http:"No HTTP sample",service.ms!=null?service.ms+" ms":"Latency unavailable",
@@ -77,17 +79,25 @@ function renderStatus(s,qa){
  }
  if(!history.length)events.append(el("p","muted","No monitoring events recorded."));
  const lab=s.lab||{};
- put("nativeDell",lab.status?String(lab.status).toUpperCase():"NOT VERIFIED");
+ put("nativeDell",lab.status?"MONITOR REPORT: "+String(lab.status).toUpperCase():"NOT VERIFIED");
  put("nativeDellDetail",[lab.ip||"No lab IP",lab.rtt_ms!=null?lab.rtt_ms+" ms":"No RTT",lab.ssh||"SSH not assessed"].join(" · "));
- put("nativeInsight",unhealthy?
-  unhealthy+" applications require review. Verify current measurements and error messages before declaring an incident.":
-  "All "+healthy+" checked public services responded normally in the latest monitoring cycle. This does not certify authenticated application workflows.");
+ put("nativeInsight",!services.length?
+  "No public-service measurements available. Do not assume services are healthy.":
+  unhealthy?
+    unhealthy+" applications require review. Verify current measurements and error messages before declaring an incident.":
+    "All "+healthy+" checked public services responded normally in the latest monitoring cycle. This does not certify authenticated application workflows.");
  renderQA(qa);
 }
 function renderQA(qa){
  const rows=Array.isArray(qa.results)?qa.results:[],counts={pass:0,review:0,"auth-gated":0,fail:0};
+ // Historical browser QA must not silently appear to be a current monitoring result.
+ const qaAt=Date.parse(qa.at);
+ const qaAge=Date.now()-qaAt;
+ const qaRecent=Number.isFinite(qaAt)&&qaAge>=-120000&&qaAge<=24*60*60*1000;
+ const qaLabel=q("nativeQaRun");
+ if(qaLabel)qaLabel.dataset.qaFreshness=qa.runId?(qaRecent?"recent":"historical"):"unverified";
  for(const r of rows)if(Object.hasOwn(counts,r.status))counts[r.status]++;
- put("nativeQaRun",qa.runId?"Run "+clean(qa.runId,60)+" · "+when(qa.at):"No automated browser QA run");
+ put("nativeQaRun",qa.runId?(qaRecent?"RECENT QA SNAPSHOT":"HISTORICAL QA · NOT CURRENT HEALTH")+" · Run "+clean(qa.runId,60)+" · "+when(qa.at):"No automated browser QA run");
  put("nativeQaSummary",counts.pass+" passed · "+counts.review+" review · "+counts["auth-gated"]+" auth-gated · "+counts.fail+" failed");
  const target=clear("nativeQA");
  for(const row of rows){
@@ -167,6 +177,24 @@ async function importFile(event){
  }catch(error){put("netpulseImportStatus","Import rejected: "+error.message);}
  finally{event.target.value="";}
 }
+function markLiveEvidenceUnavailable(){
+ for(const id of ["nativeServices","nativeHealthy","nativeDegraded","nativeLatency","nativeDell"])put(id,"—");
+ for(const id of ["nativeServiceRows","nativeTrend","nativeActivity","nativeQA","netpulseNicRows"])clear(id);
+ for(const id of ["nativeFreshness","nativeQaRun","nativeQaSummary","nativeDellDetail","netpulseNicSource"])put(id,"Current evidence unavailable");
+ const qaLabel=q("nativeQaRun");if(qaLabel)qaLabel.dataset.qaFreshness="unverified";
+ put("nativeInsight","The latest measurements could not be verified. Do not infer that services are healthy.");
+ const badge=q("nativeLiveBadge");badge.textContent="MONITORING STATUS UNVERIFIED";badge.className="v79-chip v79-chip-warn";
+}
+// The independent monitor polls every 5 minutes. Two missed cycles plus a
+// small grace period must never be presented as current healthy evidence.
+const MAX_MONITOR_AGE_MS=11*60*1000;
+function currentMonitoringEvidence(s){
+ if(s?.mode!=="live"||s.error||!Array.isArray(s.services)||!s.services.length)return false;
+ const checkedAt=Date.parse(s.last_check);
+ if(!Number.isFinite(checkedAt))return false;
+ const age=Date.now()-checkedAt;
+ return age>=-120_000&&age<=MAX_MONITOR_AGE_MS;
+}
 async function refresh(){
  if(!active||inflight)return;inflight=true;const refreshGeneration=generation;
  try{
@@ -176,10 +204,17 @@ async function refresh(){
    request("/api/v1/netpulse/interfaces")
   ]);
   if(!active||refreshGeneration!==generation)return;
+  if(!currentMonitoringEvidence(status)){
+   markLiveEvidenceUnavailable();
+   put("nativeDataError","Monitoring evidence is missing, stale or degraded. Awaiting a fresh successful monitoring cycle.");
+   return;
+  }
   renderStatus(status,qa);renderNics(nics);
   put("nativeDataError","");
  }catch(e){
-  put("nativeDataError","Live measurements temporarily unavailable. Monitoring continues independently; no simulated values substituted.");
+  if(!active||refreshGeneration!==generation)return;
+  markLiveEvidenceUnavailable();
+  put("nativeDataError","Latest measurements unavailable. Existing values have been cleared; no simulated values substituted.");
   if(e.status===401)stop();
  }finally{inflight=false;}
 }
@@ -188,9 +223,12 @@ function start(){
  refreshId=window.setInterval(()=>{if(!q("appSection")?.hidden)void refresh();},30000);
 }
 function stop(){
- active=false;generation++;clear("netpulseProtocolBars");q("netpulseProtocolFilter").replaceChildren(new Option("All protocols","All"));put("netpulsePrivacy","Signed out; imported evidence cleared.");if(refreshId!==null)window.clearInterval(refreshId);refreshId=null;
- put("nativeServices","—");put("nativeLatency","—");
- clear("nativeQA");clear("netpulseNicRows");clear("nativeServiceRows");clear("nativeActivity");clear("netpulseFlowRows");clear("netpulsePacketRows");
+ active=false;generation++;if(refreshId!==null)window.clearInterval(refreshId);refreshId=null;
+ markLiveEvidenceUnavailable();
+ put("nativeDataError","");
+ clear("netpulseProtocolBars");q("netpulseProtocolFilter").replaceChildren(new Option("All protocols","All"));
+ put("netpulsePrivacy","Signed out; imported evidence cleared.");
+ clear("netpulseFlowRows");clear("netpulsePacketRows");
  investigation=null;
  put("netpulseImportStatus","No investigation imported.");
 }

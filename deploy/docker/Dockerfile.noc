@@ -1,0 +1,18 @@
+# Internal V79 Sentinel NOC only. No Docker socket, SSH keys, scanners or browser QA.
+FROM python:3.12-slim-bookworm
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /app
+RUN groupadd --system --gid 10001 sentinel \
+    && useradd --system --uid 10001 --gid 10001 --home-dir /app sentinel \
+    && mkdir -p /app/data \
+    && chown 10001:10001 /app/data
+COPY deploy/docker/requirements-noc.txt /tmp/requirements-noc.txt
+RUN python -m pip install --no-cache-dir -r /tmp/requirements-noc.txt \
+    && rm /tmp/requirements-noc.txt
+COPY --chown=10001:10001 noc ./noc
+COPY --chown=10001:10001 web ./web
+COPY --chown=10001:10001 deploy/docker/bootstrap-private-pilot.py /app/bootstrap-private-pilot.py
+COPY --chown=10001:10001 deploy/docker/smoke-private-pilot.py /app/smoke-private-pilot.py
+USER 10001:10001
+EXPOSE 8788
+CMD ["python","-m","noc.server","--bind","127.0.0.1","--port","8788","--db","/app/data/noc-staging.sqlite3"]

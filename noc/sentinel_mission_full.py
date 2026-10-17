@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.request import urlopen
 import re
 
-SOURCE = Path("/home/firelion/V79-Sentinel/sentinel/web")
+SOURCE = Path(__file__).resolve().parent.parent / "web"
 UPSTREAM = "http://127.0.0.1:8787"
 PREFIX = "/mission-control"
 ASSETS = {
