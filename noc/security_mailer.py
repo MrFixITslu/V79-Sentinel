@@ -47,7 +47,8 @@ def send_security_notification(alert, *, enabled=False, api_key=None,
     req=Request(ENDPOINT,data=json.dumps(payload).encode("utf-8"),method="POST",
                 headers={"Authorization":"Bearer "+api_key,
                          "Content-Type":"application/json",
-                         "User-Agent":"V79Sentinel-SecurityWatch/1.0"})
+                         "User-Agent":"V79Sentinel-SecurityWatch/1.0",
+                         "Idempotency-Key":"sentinel-security-"+alert["id"][:48]})
     try:
         with transport(req,timeout=5) as response:
             return 200 <= int(response.status) < 300
