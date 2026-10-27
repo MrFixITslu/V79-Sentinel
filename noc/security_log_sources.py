@@ -33,7 +33,9 @@ def parse_journal_entry(raw, *, host):
     if not isinstance(raw, dict):
         return None
     identifier = raw.get("SYSLOG_IDENTIFIER") or ""
-    if identifier not in ("sshd", "ssh", "sudo"):
+    # journald's trusted _UID field prevents an ordinary local user from
+    # fabricating sshd/sudo entries with 'logger -t sshd'.
+    if identifier not in ("sshd", "ssh", "sudo") or str(raw.get("_UID", "")) != "0":
         return None
     cursor = raw.get("__CURSOR")
     micros = raw.get("__REALTIME_TIMESTAMP")
