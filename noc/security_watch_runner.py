@@ -111,7 +111,10 @@ def main(argv=None):
             feed=read_journal()
             summary=cycle(watch,policy,feed,
                           alerts_allowed=os.environ.get("SENTINEL_SECURITY_ALERTS_ENABLED")=="1")
-            print(json.dumps({"mode":"actual_journal","visibility":"journal_read",
+            # A zero-event response is never proof that privileged journals
+            # are accessible or that all applications are monitored.
+            source_state="read_only_query_returned_events" if feed else "UNKNOWN_NO_RECENT_JOURNAL_EVENTS"
+            print(json.dumps({"mode":"ssh_sudo_only","visibility":source_state,
                               **summary},sort_keys=True),flush=True)
         except (RuntimeError,ValueError,subprocess.TimeoutExpired) as error:
             # No raw journal or secrets in errors; unknown input is not a PASS.
