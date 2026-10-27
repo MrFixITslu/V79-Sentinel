@@ -26,10 +26,12 @@ jobs:
             noc.tests.test_security_mailer \
             noc.tests.test_security_log_sources \
             noc.tests.test_security_watch_runner \
-            noc.tests.test_security_stage_zap
+            noc.tests.test_security_stage_zap \
+            noc.tests.test_security_proxy_feed
       - name: Pure-Python syntax checks
         run: |
           python3 -B -m py_compile \
             noc/security_watch.py noc/security_mailer.py \
             noc/security_scan_policy.py noc/security_log_sources.py \
-            noc/security_watch_runner.py noc/security_stage_zap.py
+            noc/security_watch_runner.py noc/security_stage_zap.py \
+            noc/security_proxy_feed.py
