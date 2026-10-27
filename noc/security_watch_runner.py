@@ -117,9 +117,14 @@ def main(argv=None):
             print(json.dumps({"mode":"ssh_sudo_only","visibility":source_state,
                               **summary},sort_keys=True),flush=True)
         except (RuntimeError,ValueError,subprocess.TimeoutExpired) as error:
-            # No raw journal or secrets in errors; unknown input is not a PASS.
-            print(json.dumps({"mode":"actual_journal","visibility":"UNKNOWN",
-                              "error_type":type(error).__name__}),flush=True)
+            # A failed collector is a HIGH-priority visibility incident,
+            # not a report of zero intrusion attempts.
+            watch.record_source_failure(host,"journal")
+            notice=cycle(watch,policy,[],
+                         alerts_allowed=os.environ.get("SENTINEL_SECURITY_ALERTS_ENABLED")=="1")
+            print(json.dumps({"mode":"ssh_sudo_only","visibility":"UNKNOWN",
+                              "error_type":type(error).__name__,
+                              "alerts_pending":notice["email_pending"]}),flush=True)
             if not args.loop:
                 return 3
         if not args.loop:
