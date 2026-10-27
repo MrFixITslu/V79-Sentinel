@@ -84,6 +84,16 @@ class SecurityWatchTests(unittest.TestCase):
         self.assertTrue(replacement.mark_attempt(alert["id"],True))
         self.assertEqual(replacement.pending(),[])
 
+    def test_missing_trusted_log_source_is_urgent_unknown_not_healthy(self):
+        missing=self.watch.record_source_failure("v79sl","journal")
+        self.assertEqual(missing["severity"],"high")
+        self.assertFalse(missing["confirmed_intrusion"])
+        self.assertEqual(missing["rule"],"security_sensor_unavailable")
+        self.assertIsNone(self.watch.record_source_failure("v79sl","journal"))
+        with self.assertRaises(ValueError):
+            self.watch.record_source_failure("unowned","journal")
+        self.assertEqual(len(self.watch.pending()),1)
+
     def test_separate_hosts_never_cross_correlate(self):
         b=SecurityWatch(self.file,hosts={"v79sl","secondary-v79"},key=b"synthetic-secret-key-is-at-least-32-bytes",
                         clock=lambda:self.now)
