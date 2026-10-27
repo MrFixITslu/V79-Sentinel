@@ -194,6 +194,30 @@ class SecurityWatch:
                 "evidence": "local_log_correlated", "confirmed_intrusion": False
             }
 
+    def record_source_failure(self, host, source="journal"):
+        """A failed sensor is UNKNOWN, never proof of zero threats."""
+        if host not in self.hosts or source not in ("journal", "proxy", "application"):
+            raise ValueError("Unapproved security source")
+        now=int(self.clock())
+        fingerprint=self._digest(f"visibility:{host}:{source}")
+        with self.db() as db:
+            prior=db.execute("""
+                SELECT id FROM security_alerts WHERE fingerprint=? AND created>=?
+            """,(fingerprint,now-1800)).fetchone()
+            if prior:
+                return None
+            identifier=self._digest(f"{fingerprint}:{now}")
+            rule="security_sensor_unavailable"
+            summary="A required security telemetry source is unavailable; protection status UNKNOWN"
+            db.execute("""
+                INSERT INTO security_alerts
+                    (id,fingerprint,created,severity,host,rule,summary)
+                VALUES(?,?,?,?,?,?,?)
+            """,(identifier,fingerprint,now,"high",host,rule,summary))
+            return {"id":identifier,"host":host,"severity":"high",
+                    "rule":rule,"summary":summary,"ts":now,
+                    "evidence":"collector_failure","confirmed_intrusion":False}
+
     def pending(self, limit=10, now=None):
         if not 1 <= limit <= 20:
             raise ValueError("Bounded pending notification batch required")
