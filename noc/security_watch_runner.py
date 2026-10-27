@@ -16,7 +16,9 @@ import sys
 import time
 
 from .security_watch import SecurityWatch
-from .security_log_sources import parse_journal_entry, safe_process_records
+from .security_log_sources import (parse_journal_entry, parse_proxy_access_json,
+                                   safe_process_records)
+from .security_proxy_feed import read_owned_proxy_jsonl
 from .security_mailer import send_security_notification
 
 MAX_JOURNAL_BYTES=512_000
@@ -33,11 +35,15 @@ def load_owner_policy(file, hostname):
     if (path.stat().st_mode & (stat.S_IRWXG | stat.S_IRWXO)):
         raise ValueError("Owner policy must be private (chmod 600)")
     data=json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data,dict) or set(data) != {
+    mandatory={
         "enabled","hostname","approved_ssh_origins","approved_privileged_actors",
         "email_enabled","alert_from","alert_to"
-    }:
+    }
+    if not isinstance(data,dict) or not mandatory.issubset(data) or set(data)-mandatory-{"proxy_log_path"}:
         raise ValueError("Exact security watch configuration required")
+    if "proxy_log_path" in data and (not isinstance(data["proxy_log_path"],str)
+                                      or not data["proxy_log_path"].startswith("/var/log/v79-security/")):
+        raise ValueError("Proxy audit feed must be an explicitly approved local path")
     if data["enabled"] is not True or data["hostname"] != hostname:
         raise ValueError("Security watch not approved for this exact host")
     if not isinstance(data["approved_ssh_origins"],list) or not isinstance(data["approved_privileged_actors"],list):
@@ -69,8 +75,12 @@ def read_journal():
             continue
     return records
 
-def cycle(watch, config, records, *, alerts_allowed=False, sender=None):
+def cycle(watch, config, records, *, proxy_records=(), alerts_allowed=False, sender=None):
     status=safe_process_records(watch,records,parse_journal_entry,host=config["hostname"],maximum=MAX_EVENTS)
+    proxy_metrics=safe_process_records(watch,proxy_records,parse_proxy_access_json,
+                                       host=config["hostname"],maximum=MAX_EVENTS)
+    status["proxy_processed"]=proxy_metrics["processed"]
+    status["proxy_alerts"]=proxy_metrics["new_alerts"]
     status["email_sent"]=0
     status["email_pending"]=len(watch.pending())
     # Notifying from in-memory test feeds is intentionally impossible unless
@@ -109,12 +119,22 @@ def main(argv=None):
     while True:
         try:
             feed=read_journal()
-            summary=cycle(watch,policy,feed,
+            proxy_records=[]
+            proxy_visibility="NOT_CONFIGURED"
+            if policy.get("proxy_log_path"):
+                try:
+                    proxy_records=read_owned_proxy_jsonl(policy["proxy_log_path"])
+                    proxy_visibility="trusted_file_read"
+                except (ValueError,OSError):
+                    watch.record_source_failure(host,"proxy")
+                    proxy_visibility="UNKNOWN_PROXY_FEED_UNAVAILABLE"
+            summary=cycle(watch,policy,feed,proxy_records=proxy_records,
                           alerts_allowed=os.environ.get("SENTINEL_SECURITY_ALERTS_ENABLED")=="1")
             # A zero-event response is never proof that privileged journals
             # are accessible or that all applications are monitored.
             source_state="read_only_query_returned_events" if feed else "UNKNOWN_NO_RECENT_JOURNAL_EVENTS"
-            print(json.dumps({"mode":"ssh_sudo_only","visibility":source_state,
+            print(json.dumps({"mode":"ssh_sudo_and_optional_proxy","visibility":source_state,
+                              "proxy_visibility":proxy_visibility,
                               **summary},sort_keys=True),flush=True)
         except (RuntimeError,ValueError,subprocess.TimeoutExpired) as error:
             # A failed collector is a HIGH-priority visibility incident,
