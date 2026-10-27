@@ -14,7 +14,7 @@ class LogSourceTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
     def journal(self,msg,identifier="sshd",cursor="s=1"):
-        return {"SYSLOG_IDENTIFIER":identifier,"MESSAGE":msg,
+        return {"SYSLOG_IDENTIFIER":identifier,"_UID":"0","MESSAGE":msg,
                 "__REALTIME_TIMESTAMP":str(self.now*1000000),"__CURSOR":cursor}
     def test_ssh_success_unknown_source_generates_review_alert(self):
         record=parse_journal_entry(self.journal(
