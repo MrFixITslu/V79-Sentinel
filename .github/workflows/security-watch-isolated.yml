@@ -1,0 +1,32 @@
+name: Sentinel isolated security watch regression
+on:
+  push:
+    branches:
+      - feature/security-watch-passive-alerts-20261027
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  synthetic-security-watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Offline negative tests; NO production connectivity or credentials
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 -B -m unittest -v \
+            noc.tests.test_security_watch \
+            noc.tests.test_security_scan_policy \
+            noc.tests.test_security_mailer \
+            noc.tests.test_security_log_sources
+      - name: Pure-Python syntax checks
+        run: |
+          python3 -B -m py_compile \
+            noc/security_watch.py noc/security_mailer.py \
+            noc/security_scan_policy.py noc/security_log_sources.py
