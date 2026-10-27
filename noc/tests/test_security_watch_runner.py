@@ -31,7 +31,7 @@ class RunnerTests(unittest.TestCase):
   with self.assertRaises(ValueError): load_owner_policy(self.path,"wrong-host")
  def test_no_send_when_no_explicit_double_opt_in(self):
   logs=[{"__CURSOR":"synthetic-cursor-1","__REALTIME_TIMESTAMP":str(self.now*1000000),
-     "SYSLOG_IDENTIFIER":"sshd","MESSAGE":"Accepted publickey for admin from 203.0.113.20 port 22 ssh2"}]
+     "SYSLOG_IDENTIFIER":"sshd","_UID":"0","MESSAGE":"Accepted publickey for admin from 203.0.113.20 port 22 ssh2"}]
   with patch("noc.security_watch_runner.send_security_notification",side_effect=AssertionError("No mail allowed")):
    out=cycle(self.watch,self.config,logs,alerts_allowed=False)
   self.assertEqual(out["new_alerts"],1)
