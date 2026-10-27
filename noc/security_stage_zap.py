@@ -33,7 +33,7 @@ def build_staging_zap_command(*, target, image, approved, staging_verified,
         "--memory=1024m","--cpus=1","--pids-limit=100",
         "--tmpfs=/tmp:rw,nosuid,nodev,size=128m",
         image,"zap-baseline.py","-t",target,"-m","1","-T","3",
-        "-I",  # report passive findings without interpreting all WARN as security certification
+        # ZAP warnings fail the rehearsal until reviewed rather than being hidden.
     ]
 
 
