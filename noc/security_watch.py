@@ -12,6 +12,7 @@ import re
 import sqlite3
 import time
 from dataclasses import dataclass
+from contextlib import contextmanager
 from pathlib import Path
 
 KINDS = frozenset({
@@ -113,10 +114,15 @@ class SecurityWatch:
         except OSError:
             pass
 
+    @contextmanager
     def db(self):
         db = sqlite3.connect(self.path, timeout=3)
         db.execute("PRAGMA busy_timeout=3000")
-        return db
+        try:
+            with db:
+                yield db
+        finally:
+            db.close()
 
     def _digest(self, text):
         return hmac.new(self.key, text.encode("utf-8"), hashlib.sha256).hexdigest()
