@@ -84,14 +84,25 @@ def evaluate_runtime_source_parity(observed, expected, *, now=None):
                 type(observed["health"]) is not str):
             return result
         argv = observed["argv"]
-        if (type(argv) is not list or len(argv) != 3 or
+        # The actual Dell Docker Config.Cmd includes the explicit safe bind
+        # and port: python sentinel.py --live --bind 127.0.0.1 --port 8787.
+        # Accept that exact fixed contract as well as the original three-part
+        # invocation (which uses the same loopback/8787 defaults). Reject
+        # wildcard listeners, other ports, reordering, duplicates and flags.
+        # Config.Cmd describes container configuration, NOT a separately
+        # authenticated /proc executable identity.
+        if (type(argv) is not list or
+                not all(type(arg) is str for arg in argv) or
+                len(argv) not in (3, 7) or
                 argv[0] not in (
                     "python", "python3", "/usr/local/bin/python",
                     "/usr/local/bin/python3",
-                ) or type(argv[0]) is not str or
-                type(argv[1]) is not str or
+                ) or
                 argv[1] not in ("sentinel.py", "/app/sentinel.py") or
-                argv[2] != "--live"):
+                argv[2] != "--live" or
+                (len(argv) == 7 and argv[3:] != [
+                    "--bind", "127.0.0.1", "--port", "8787"
+                ])):
             return result
         stamp = _utc_stamp(observed["captured_at"])
         clock = datetime.now(timezone.utc) if now is None else now
