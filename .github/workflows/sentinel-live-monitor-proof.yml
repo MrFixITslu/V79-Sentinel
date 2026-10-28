@@ -20,6 +20,8 @@ on:
       - 'noc/owned_https_evidence_gate.py'
       - 'noc/inprocess_probe_receipt.py'
       - 'noc/tests/test_inprocess_probe_receipt.py'
+      - 'noc/tests/test_dns_pinned_https_probe.py'
+      - 'monitor_core.py'
       - 'sentinel.py'
       - '.github/workflows/sentinel-live-monitor-proof.yml'
   workflow_dispatch:
@@ -60,6 +62,8 @@ jobs:
             'noc/tests/test_sentinel_owner_shadow_cli.py',
             'noc/inprocess_probe_receipt.py',
             'noc/tests/test_inprocess_probe_receipt.py',
+            'noc/tests/test_dns_pinned_https_probe.py',
+            'monitor_core.py',
             'sentinel.py'
           ):
             ast.parse(open(name,encoding='utf-8').read(),filename=name)
@@ -74,3 +78,4 @@ jobs:
           python -B -m unittest noc.tests.test_signed_owned_evidence -v
           python -B -m unittest noc.tests.test_owned_https_evidence_gate -v
           python -B -m unittest noc.tests.test_inprocess_probe_receipt -v
+          python -B -m unittest noc.tests.test_dns_pinned_https_probe -v
