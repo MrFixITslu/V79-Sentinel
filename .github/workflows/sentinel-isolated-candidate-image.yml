@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'images/sentinel-candidate.Dockerfile'
+      - 'images/sentinel-candidate-requirements.lock'
       - 'sentinel.py'
       - 'monitor_core.py'
       - 'lab_probe.py'
@@ -32,21 +33,21 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
-      - name: Resolve and record base image digest (this job only)
+      - name: Pull only the previously pinned base digest
         shell: bash
         run: |
           set -euo pipefail
-          docker pull --platform linux/amd64 python:3.12-slim-bookworm
-          BASE_PIN="$(docker image inspect python:3.12-slim-bookworm --format '{{index .RepoDigests 0}}')"
-          case "$BASE_PIN" in python@sha256:*) ;; *) echo "NO_VERIFIED_BASE_DIGEST"; exit 1;; esac
-          printf 'RESOLVED_BASE_IMAGE=%s\n' "$BASE_PIN"
-          echo "BASE_PIN=$BASE_PIN" >> "$GITHUB_ENV"
+          BASE_PIN='python@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337'
+          docker pull --platform linux/amd64 "$BASE_PIN"
+          docker image inspect "$BASE_PIN" >/dev/null
+          printf 'PINNED_BASE_IMAGE=%s\n' "$BASE_PIN"
       - name: Build context from exactly allowlisted source files
         shell: bash
         run: |
           set -euo pipefail
           CTX="$RUNNER_TEMP/v79-sentinel-candidate-context"
-          mkdir -p "$CTX/noc" "$CTX/web" "$CTX/qa"
+          mkdir -p "$CTX/noc" "$CTX/web" "$CTX/qa" "$CTX/images"
+          cp -- images/sentinel-candidate-requirements.lock "$CTX/images/sentinel-candidate-requirements.lock"
           for file in sentinel.py monitor_core.py lab_probe.py qa_results.py protected_preflight.py config.json; do
             cp -- "$file" "$CTX/$file"
           done
@@ -57,16 +58,15 @@ jobs:
           for file in __init__.py inprocess_probe_receipt.py legacy_monitor_proof.py signed_owned_evidence.py owned_https_evidence_gate.py; do
             cp -- "noc/$file" "$CTX/noc/$file"
           done
-          test "$(find "$CTX" -type f | wc -l)" -eq 15
+          test "$(find "$CTX" -type f | wc -l)" -eq 16
           test "$(find "$CTX" -type l | wc -l)" -eq 0
-          printf 'ALLOWLIST_FILE_COUNT=15\n'
+          printf 'ALLOWLIST_FILE_COUNT=16\n'
           echo "CANDIDATE_CONTEXT=$CTX" >> "$GITHUB_ENV"
       - name: Build only a local ephemeral image, no registry push
         shell: bash
         run: |
           set -euo pipefail
           docker build --platform linux/amd64 --pull=false \
-            --build-arg "BASE_IMAGE=$BASE_PIN" \
             -f images/sentinel-candidate.Dockerfile \
             -t v79-sentinel-candidate:github-source-review \
             "$CANDIDATE_CONTEXT"
