@@ -18,6 +18,9 @@ on:
       - 'noc/tests/test_sentinel_owner_shadow_cli.py'
       - 'noc/signed_owned_evidence.py'
       - 'noc/owned_https_evidence_gate.py'
+      - 'noc/inprocess_probe_receipt.py'
+      - 'noc/tests/test_inprocess_probe_receipt.py'
+      - 'sentinel.py'
       - '.github/workflows/sentinel-live-monitor-proof.yml'
   workflow_dispatch:
 
@@ -54,7 +57,10 @@ jobs:
             'noc/tests/test_offhost_watchdog_policy.py',
             'noc/tests/test_owner_shadow_rehearsal.py',
             'scripts/sentinel_owner_shadow.py',
-            'noc/tests/test_sentinel_owner_shadow_cli.py'
+            'noc/tests/test_sentinel_owner_shadow_cli.py',
+            'noc/inprocess_probe_receipt.py',
+            'noc/tests/test_inprocess_probe_receipt.py',
+            'sentinel.py'
           ):
             ast.parse(open(name,encoding='utf-8').read(),filename=name)
           print('SYNTAX_PASS')
@@ -67,3 +73,4 @@ jobs:
           python -B -m unittest noc.tests.test_sentinel_owner_shadow_cli -v
           python -B -m unittest noc.tests.test_signed_owned_evidence -v
           python -B -m unittest noc.tests.test_owned_https_evidence_gate -v
+          python -B -m unittest noc.tests.test_inprocess_probe_receipt -v
