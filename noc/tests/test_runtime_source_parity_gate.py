@@ -37,10 +37,13 @@ OBSERVED = {
 }
 
 
-def check(observed=None, expected=None, *, now=NOW):
+_DEFAULT = object()
+
+
+def check(observed=_DEFAULT, expected=_DEFAULT, *, now=NOW):
     return evaluate_runtime_source_parity(
-        copy.deepcopy(OBSERVED if observed is None else observed),
-        copy.deepcopy(EXPECTED if expected is None else expected),
+        copy.deepcopy(OBSERVED if observed is _DEFAULT else observed),
+        copy.deepcopy(EXPECTED if expected is _DEFAULT else expected),
         now=now,
     )
 
@@ -113,6 +116,9 @@ class RuntimeParityGateTests(unittest.TestCase):
             ["python", "sentinel.py", "--live", "--once"],
             ["python", "sentinel.py", "--live", "--live"],
             ["python", "sentinel.py", "--live", "--bind", "0.0.0.0"],
+            ["bash", "-c", "--live"],
+            ["python", "evil.py", "--live"],
+            ["python", "sentinel.py", "--live", "--port", "80"],
             "python sentinel.py --live",
             [],
         ):
