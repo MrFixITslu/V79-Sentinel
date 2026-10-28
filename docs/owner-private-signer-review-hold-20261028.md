@@ -46,3 +46,18 @@
 ## Handoff
 
 The next action is to complete an independently accepted test suite for the candidate signer and a trusted source-provenance design. Until those pass, keep the verified live monitor running unchanged and continue using only the previously successful one-shot ephemeral rehearsal.
+
+## Independent source review — 28 October (promotion blockers)
+
+The dedicated [private-signer promotion workflow](https://github.com/MrFixITslu/V79-Sentinel/actions/workflows/sentinel-private-signer-promotion-gate.yml) now fails deliberately while `noc/tests/test_owner_private_candidate.py` is absent. This does not change the green results for the **separately tested ephemeral shadow rehearsal**. An unprotected merge remains possible if GitHub branch rules do not require this check; founder and reviewer must still preserve release HOLD.
+
+Additional code-level findings requiring an accepted review/test before release:
+
+1. **Untrusted payload provenance (critical):** `accept_owner_private_candidate()` signs any well-formed input with `mode=live`, because it accepts the snapshot as a Python argument. The signer cannot establish that the monitored process performed those measurements. No integration should elevate such reports to verified runtime evidence.
+2. **Key-directory ancestry (security hardening):** `O_NOFOLLOW` guards the final opened directory and key name but does not by itself prohibit a symlink in a parent component. The private directory path must be fixed to an owner-approved location with protected ancestor custody; this needs race-safe review, not an optimistic claim of complete path safety.
+3. **Cycle-reset semantics:** `candidate_envelope` uses the monitor process-local cycle as sequence. A restart can decrease the cycle; existing strict monotonic replay logic should fail closed and require owner-supervised re-enrolment, without cursor reset.
+4. **Distinct security scopes:** The pre-existing `noc/dell_signed_pilot.py` has a signed **Acer-originated TCP 443** check. It is not a seven-service HTTPS monitor, and a laptop that is off/sleeping is not an independent always-on Dell-outage detector. Do not treat its green tests as acceptance of this new key custody module.
+5. **Outbox delivery and source truth:** A durable `review_required` row is **not** a dispatched or founder-received alert. Provider HTTP 2xx is not mailbox proof. Duplicates, retries, receipt and outage-blindness need separate end-to-end tests.
+6. **Owner control:** No permissions for unsolicited systemd schedules, secrets, Docker mounts, off-host connectivity, Hub/Tiquet writes, email or customer integration exist under this draft.
+
+**Current CI interpretation:** the private-signer promotion gate must become green on its own dedicated accepted tests **and** a separate process-provenance review must pass before the signer can be installed. The general regression pipeline being green is not sufficient.
