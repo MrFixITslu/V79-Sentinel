@@ -54,6 +54,50 @@ def _safe_addresses(hostname):
     return addresses
 
 
+class PinnedPublicHTTPSConnection(http.client.HTTPSConnection):
+    """TLS to the *validated public IP*, with original hostname as SNI.
+
+    The DNS check and transport must use exactly the same address set.
+    Standard HTTPSConnection.connect() re-resolves host and allows DNS rebinding
+    between a public-IP allowlist check and the actual TCP socket. This class
+    eliminates that second hostname resolution. It never accepts tunnels.
+    """
+
+    def __init__(self, hostname, public_addresses, *, timeout, context):
+        if (type(hostname) is not str or not hostname or
+                type(public_addresses) not in (tuple, list) or
+                not 1 <= len(public_addresses) <= 20):
+            raise ValueError("Validated DNS address set required")
+        if not all(type(ip) is str and ipaddress.ip_address(ip).is_global
+                   for ip in public_addresses):
+            raise ValueError("Only validated public IP addresses are permitted")
+        super().__init__(hostname, 443, timeout=timeout, context=context)
+        self._pinned_addresses = tuple(public_addresses)
+
+    def connect(self):
+        if self._tunnel_host:
+            raise ValueError("Proxy tunnels are not permitted")
+        last_error = None
+        for ip in self._pinned_addresses:
+            raw = None
+            try:
+                # The TCP socket is pinned to a numeric IP. The TLS peer-name
+                # and certificate verification still use the original domain.
+                raw = socket.create_connection(
+                    (ip, self.port), self.timeout, self.source_address)
+                self.sock = self._context.wrap_socket(
+                    raw, server_hostname=self.host)
+                return
+            except (OSError, ValueError) as exc:
+                if raw is not None:
+                    raw.close()
+                self.sock = None
+                last_error = exc
+        if last_error is not None:
+            raise last_error
+        raise ValueError("Validated DNS address set required")
+
+
 def probe(target):
     """One HEAD request, with TLS validation, no redirects, no credentials, no writes."""
     address = target["url"]
@@ -73,8 +117,9 @@ def probe(target):
         addresses = _safe_addresses(hostname)
         result["dns_ms"] = max(0, round((time.monotonic() - dns_start) * 1000))
         result["ip_count"] = len(addresses)
-        conn = http.client.HTTPSConnection(hostname, 443, timeout=TIMEOUT_SECONDS,
-                                           context=ssl.create_default_context())
+        conn = PinnedPublicHTTPSConnection(
+            hostname, addresses, timeout=TIMEOUT_SECONDS,
+            context=ssl.create_default_context())
         conn.connect()
         cert = conn.sock.getpeercert()
         expiry_raw = cert.get("notAfter")
