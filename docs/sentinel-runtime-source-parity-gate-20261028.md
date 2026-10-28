@@ -54,4 +54,6 @@ This is **positive read-only configured-runtime evidence**, NOT independent veri
 
 The draft parity evaluator originally restricted `argv` to exactly three elements, falsely rejecting the legitimate existing loopback-only Docker configuration. Options /REDTEAM: modify production to fit test (REJECT), allow all CLI flags (REJECT), permit only the exact safe observed `--bind 127.0.0.1 --port 8787` sequence as an additional fixed contract (SELECTED). This is source-only and preserves a strict rejection for wildcard bindings, wrong/reordered/duplicated flags, altered port and shell wrappers. Added two focused positive/negative tests; all gate outputs still lack authority to deploy, sign or send. **No live monitor or server changes.**
 
+**Independent CI final readback:** 4/4 GitHub Actions workflows completed SUCCESS on code SHA `956afaf5ffa8498402dcc7b730c96e41e60c59f0`: legacy bridge run `40759133091` (job log explicitly `Ran 16 tests ... OK` for the parity suite), private signer gate `40759133064`, full isolated regression `40759133061`, private Docker staging `40759133087`. These are synthetic/source tests only; the Dell was not changed.
+
 **Decision:** SOURCE PARITY GATE PREPARED. Production release **HOLD**.
