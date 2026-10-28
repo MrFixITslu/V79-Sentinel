@@ -1,0 +1,120 @@
+name: Sentinel isolated candidate image (NO DEPLOY)
+
+on:
+  pull_request:
+    paths:
+      - 'images/sentinel-candidate.Dockerfile'
+      - 'sentinel.py'
+      - 'monitor_core.py'
+      - 'lab_probe.py'
+      - 'qa_results.py'
+      - 'protected_preflight.py'
+      - 'config.json'
+      - 'web/**'
+      - 'qa/protected-qa-policy.json'
+      - 'noc/__init__.py'
+      - 'noc/inprocess_probe_receipt.py'
+      - 'noc/legacy_monitor_proof.py'
+      - 'noc/signed_owned_evidence.py'
+      - 'noc/owned_https_evidence_gate.py'
+      - '.github/workflows/sentinel-isolated-candidate-image.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-isolate:
+    name: Build ephemeral candidate / demo-only boot / no external probes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Resolve and record base image digest (this job only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker pull --platform linux/amd64 python:3.12-slim-bookworm
+          BASE_PIN="$(docker image inspect python:3.12-slim-bookworm --format '{{index .RepoDigests 0}}')"
+          case "$BASE_PIN" in python@sha256:*) ;; *) echo "NO_VERIFIED_BASE_DIGEST"; exit 1;; esac
+          printf 'RESOLVED_BASE_IMAGE=%s\n' "$BASE_PIN"
+          echo "BASE_PIN=$BASE_PIN" >> "$GITHUB_ENV"
+      - name: Build context from exactly allowlisted source files
+        shell: bash
+        run: |
+          set -euo pipefail
+          CTX="$RUNNER_TEMP/v79-sentinel-candidate-context"
+          mkdir -p "$CTX/noc" "$CTX/web" "$CTX/qa"
+          for file in sentinel.py monitor_core.py lab_probe.py qa_results.py protected_preflight.py config.json; do
+            cp -- "$file" "$CTX/$file"
+          done
+          for file in index.html app.js style.css; do
+            cp -- "web/$file" "$CTX/web/$file"
+          done
+          cp -- qa/protected-qa-policy.json "$CTX/qa/protected-qa-policy.json"
+          for file in __init__.py inprocess_probe_receipt.py legacy_monitor_proof.py signed_owned_evidence.py owned_https_evidence_gate.py; do
+            cp -- "noc/$file" "$CTX/noc/$file"
+          done
+          test "$(find "$CTX" -type f | wc -l)" -eq 15
+          test "$(find "$CTX" -type l | wc -l)" -eq 0
+          printf 'ALLOWLIST_FILE_COUNT=15\n'
+          echo "CANDIDATE_CONTEXT=$CTX" >> "$GITHUB_ENV"
+      - name: Build only a local ephemeral image, no registry push
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --platform linux/amd64 --pull=false \
+            --build-arg "BASE_IMAGE=$BASE_PIN" \
+            -f images/sentinel-candidate.Dockerfile \
+            -t v79-sentinel-candidate:github-source-review \
+            "$CANDIDATE_CONTEXT"
+          echo "CANDIDATE_IMAGE_ID=$(docker image inspect v79-sentinel-candidate:github-source-review --format '{{.Id}}')"
+          echo "CHECKOUT_SHA=$(git rev-parse HEAD)"
+          test "$(docker image inspect v79-sentinel-candidate:github-source-review --format '{{.Config.User}}')" = '10001:10001'
+          test "$(docker image inspect v79-sentinel-candidate:github-source-review --format '{{json .Config.Cmd}}')" = '["python","sentinel.py","--live","--bind","127.0.0.1","--port","8787"]'
+          echo "IMAGE_USER_AND_FUTURE_LIVE_COMMAND=PASS"
+      - name: Run demo-only candidate with no network, writeable mounts or privileges
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name v79-sentinel-candidate-ci \
+            --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --pids-limit 64 --memory 256m \
+            --tmpfs /tmp:rw,nosuid,nodev,size=8m,uid=10001,gid=10001 \
+            --tmpfs /app/data:rw,nosuid,nodev,size=8m,uid=10001,gid=10001 \
+            v79-sentinel-candidate:github-source-review \
+            python sentinel.py --bind 127.0.0.1 --port 8787
+          test "$(docker inspect v79-sentinel-candidate-ci --format '{{.HostConfig.NetworkMode}}')" = none
+          test "$(docker inspect v79-sentinel-candidate-ci --format '{{.HostConfig.ReadonlyRootfs}}')" = true
+          test "$(docker inspect v79-sentinel-candidate-ci --format '{{.HostConfig.Privileged}}')" = false
+          for i in $(seq 1 15); do
+            if docker exec v79-sentinel-candidate-ci python -c 'import json,urllib.request; u=urllib.request.urlopen("http://127.0.0.1:8787/api/status",timeout=2); j=json.load(u); assert u.status==200 and j["mode"]=="demo" and j["last_check"] is None and j["cycle"]==0 and j["error"] is None' 2>/dev/null; then
+              echo 'ISOLATED_DEMO_ONLY_SMOKE=PASS'
+              break
+            fi
+            if [ "$i" -eq 15 ]; then echo "DEMO_SMOKE_FAILED"; exit 1; fi
+            sleep 1
+          done
+          docker exec v79-sentinel-candidate-ci python -c 'from pathlib import Path; import os; assert os.geteuid()==10001; assert os.getegid()==10001; assert Path("/app/noc/inprocess_probe_receipt.py").is_file(); print("NONROOT_EVIDENCE_TAP_PRESENT=PASS")'
+      - name: Verify source bytes match checkout and print safe dual hash manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in sentinel.py monitor_core.py noc/inprocess_probe_receipt.py; do
+            checked="$(sha256sum "$CANDIDATE_CONTEXT/$file" | cut -d' ' -f1)"
+            actual="$(docker exec v79-sentinel-candidate-ci python -c 'from pathlib import Path; import sys,hashlib;print(hashlib.sha256((Path("/app")/sys.argv[1]).read_bytes()).hexdigest())' "$file")"
+            test "$checked" = "$actual"
+            gitblob="$(git hash-object "$file")"
+            printf 'CANDIDATE_SOURCE %s SHA256=%s GIT_BLOB=%s\n' "$file" "$actual" "$gitblob"
+          done
+          echo "SOURCE_PARITY=PASS_NO_KEYS_NO_PUBLISH_NO_PROD"
+      - name: Remove ephemeral container and image
+        if: always()
+        shell: bash
+        run: |
+          docker rm -f v79-sentinel-candidate-ci >/dev/null 2>&1 || true
+          docker image rm v79-sentinel-candidate:github-source-review >/dev/null 2>&1 || true
+          echo "CANDIDATE_IS_EPHEMERAL_NOT_STORED_OR_DEPLOYED"
