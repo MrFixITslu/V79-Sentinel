@@ -1,0 +1,58 @@
+name: Sentinel Dell monitor guarded cutover (static no deploy)
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/sentinel-dell-guarded-monitor-cutover.py'
+      - '.github/workflows/sentinel-dell-guarded-cutover-static.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  syntax-and-safety:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Compile and inspect monitor-only release script (no Docker calls)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B -m py_compile scripts/sentinel-dell-guarded-monitor-cutover.py
+          python -B - <<'PY'
+          import ast, importlib.util, inspect
+          from pathlib import Path
+          path=Path('scripts/sentinel-dell-guarded-monitor-cutover.py')
+          source=path.read_text(encoding='utf-8')
+          root=ast.parse(source)
+          assert 'docker system prune' not in source
+          assert 'docker compose down' not in source
+          assert 'sudo ' not in source
+          assert 'GITHUB_TOKEN' not in source
+          spec=importlib.util.spec_from_file_location('guarded_monitor',path)
+          g=importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(g)
+          assert g.IMAGE.endswith('@'+g.MANIFEST)
+          assert g.SOURCE == '39dfcff98ed790e18ff24ec43a0fcade90e67981'
+          assert len(g.EXPECTED_SOURCES)==3 and len(g.EXPECTED_OLD)==3
+          assert '--no-deps' in inspect.getsource(g.compose_up)
+          assert '--no-build' in inspect.getsource(g.compose_up)
+          assert '--pull' in inspect.getsource(g.compose_up)
+          assert 'never' in inspect.getsource(g.compose_up)
+          assert 'verify_sources_no_network' in inspect.getsource(g.main)
+          assert 'demo_check' in inspect.getsource(g.main)
+          assert 'live_once' in inspect.getsource(g.main)
+          assert 'verify_after' in inspect.getsource(g.main)
+          assert 'atomic_write(BASE, old_bytes' in inspect.getsource(g.main)
+          try:
+              g.need(False,'EXPECTED_HOLD')
+              raise AssertionError('Fail-closed helper failed')
+          except g.Hold as e:
+              assert str(e)=='EXPECTED_HOLD'
+          print('MONITOR_ONLY_SCRIPT_STATIC=PASS')
+          print('DOCKER_CALLS_OR_PRODUCTION_ACTIONS=NONE')
+          PY
