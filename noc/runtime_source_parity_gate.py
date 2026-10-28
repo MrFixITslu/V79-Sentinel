@@ -83,10 +83,14 @@ def evaluate_runtime_source_parity(observed, expected, *, now=None):
                 type(observed["health"]) is not str):
             return result
         argv = observed["argv"]
-        if (type(argv) is not list or not 1 <= len(argv) <= 20 or
-                not all(type(s) is str and 1 <= len(s) <= 256 for s in argv) or
-                argv.count("--live") != 1 or "--once" in argv or
-                "--bind" in argv or "--port" in argv):
+        if (type(argv) is not list or len(argv) != 3 or
+                argv[0] not in (
+                    "python", "python3", "/usr/local/bin/python",
+                    "/usr/local/bin/python3",
+                ) or type(argv[0]) is not str or
+                type(argv[1]) is not str or
+                argv[1] not in ("sentinel.py", "/app/sentinel.py") or
+                argv[2] != "--live"):
             return result
         stamp = _utc_stamp(observed["captured_at"])
         clock = datetime.now(timezone.utc) if now is None else now
