@@ -9,6 +9,7 @@ from noc.runtime_source_parity_gate import evaluate_runtime_source_parity
 
 NOW = datetime(2026, 10, 28, 19, 0, tzinfo=timezone.utc)
 PIN = "a" * 40
+SOURCE_SHA = "c" * 64
 FILES = (
     "sentinel.py",
     "monitor_core.py",
@@ -19,7 +20,7 @@ EXPECTED = {
     "image_id": "sha256:" + "b" * 64,
     "uid": 10001,
     "gid": 10001,
-    "sources": {path: PIN for path in FILES},
+    "sources": {path: {"git_blob": PIN, "sha256": SOURCE_SHA} for path in FILES},
 }
 OBSERVED = {
     "container": EXPECTED["container"],
@@ -30,7 +31,7 @@ OBSERVED = {
     "health": "healthy",
     "argv": ["python", "sentinel.py", "--live"],
     "sources": {
-        path: {"git_blob": PIN, "regular": True, "symlink": False}
+        path: {"git_blob": PIN, "sha256": SOURCE_SHA, "regular": True, "symlink": False}
         for path in FILES
     },
     "captured_at": "2026-10-28T18:59:30Z",
@@ -71,6 +72,7 @@ class RuntimeParityGateTests(unittest.TestCase):
         self.assertTrue(result["runtimeMetadataMatch"])
         self.assert_no_live_authority(result)
         self.assertNotIn(PIN, str(result))
+        self.assertNotIn(SOURCE_SHA, str(result))
         self.assertNotIn(EXPECTED["image_id"], str(result))
 
     def test_image_id_and_container_identity_are_mandatory(self):
@@ -132,19 +134,35 @@ class RuntimeParityGateTests(unittest.TestCase):
                 other["sources"][name]["git_blob"] = "f" * 40
                 self.assert_closed(check(other))
                 other = copy.deepcopy(OBSERVED)
+                other["sources"][name]["sha256"] = "d" * 64
+                self.assert_closed(check(other))
+                other = copy.deepcopy(OBSERVED)
                 del other["sources"][name]
                 self.assert_closed(check(other))
         other = copy.deepcopy(OBSERVED)
         other["sources"]["private_key"] = {
-            "git_blob": PIN, "regular": True, "symlink": False}
+            "git_blob": PIN, "sha256": SOURCE_SHA, "regular": True, "symlink": False}
         self.assert_closed(check(other))
+
+    def test_sha256_is_mandatory_even_if_git_blob_matches(self):
+        for value in ("d" * 64, "z" * 64, "c" * 40, "", True):
+            with self.subTest(digest=value):
+                other = copy.deepcopy(OBSERVED)
+                other["sources"]["sentinel.py"]["sha256"] = value
+                self.assert_closed(check(other))
+        other = copy.deepcopy(EXPECTED)
+        other["sources"]["sentinel.py"]["sha256"] = "z" * 64
+        self.assert_closed(check(expected=other))
+        other = copy.deepcopy(EXPECTED)
+        del other["sources"]["sentinel.py"]["sha256"]
+        self.assert_closed(check(expected=other))
 
     def test_symlink_and_nonregular_source_are_never_accepted(self):
         for value in (
             {"git_blob": PIN, "regular": True, "symlink": True},
-            {"git_blob": PIN, "regular": False, "symlink": False},
-            {"git_blob": PIN, "regular": 1, "symlink": False},
-            {"git_blob": PIN, "regular": True, "symlink": 0},
+            {"git_blob": PIN, "sha256": SOURCE_SHA, "regular": False, "symlink": False},
+            {"git_blob": PIN, "sha256": SOURCE_SHA, "regular": 1, "symlink": False},
+            {"git_blob": PIN, "sha256": SOURCE_SHA, "regular": True, "symlink": 0},
         ):
             with self.subTest(value=value):
                 other = copy.deepcopy(OBSERVED)
@@ -153,8 +171,8 @@ class RuntimeParityGateTests(unittest.TestCase):
 
     def test_manifest_must_be_exact_and_bounded(self):
         for expected in (
-            EXPECTED | {"sources": {"sentinel.py": PIN}},
-            EXPECTED | {"sources": EXPECTED["sources"] | {"extra": PIN}},
+            EXPECTED | {"sources": {"sentinel.py": {"git_blob": PIN, "sha256": SOURCE_SHA}}},
+            EXPECTED | {"sources": EXPECTED["sources"] | {"extra": {"git_blob": PIN, "sha256": SOURCE_SHA}}},
             EXPECTED | {"uid": True},
             EXPECTED | {"uid": "10001"},
         ):
