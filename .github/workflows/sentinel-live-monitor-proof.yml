@@ -23,6 +23,8 @@ on:
       - 'noc/tests/test_dns_pinned_https_probe.py'
       - 'noc/runtime_source_parity_gate.py'
       - 'noc/tests/test_runtime_source_parity_gate.py'
+      - 'scripts/check_sentinel_candidate_lock.py'
+      - 'noc/tests/test_candidate_dependency_policy.py'
       - 'monitor_core.py'
       - 'sentinel.py'
       - '.github/workflows/sentinel-live-monitor-proof.yml'
@@ -67,6 +69,8 @@ jobs:
             'noc/tests/test_dns_pinned_https_probe.py',
             'noc/runtime_source_parity_gate.py',
             'noc/tests/test_runtime_source_parity_gate.py',
+            'scripts/check_sentinel_candidate_lock.py',
+            'noc/tests/test_candidate_dependency_policy.py',
             'monitor_core.py',
             'sentinel.py'
           ):
@@ -84,3 +88,4 @@ jobs:
           python -B -m unittest noc.tests.test_inprocess_probe_receipt -v
           python -B -m unittest noc.tests.test_dns_pinned_https_probe -v
           python -B -m unittest noc.tests.test_runtime_source_parity_gate -v
+          python -B -m unittest noc.tests.test_candidate_dependency_policy -v
