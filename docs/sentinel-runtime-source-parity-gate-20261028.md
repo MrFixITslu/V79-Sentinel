@@ -17,13 +17,13 @@ Three options considered:
 
 Module: `noc/runtime_source_parity_gate.py` — `evaluate_runtime_source_parity(observed, expected, now=...)`.
 
-The owner must pin **expected** values from a separately reviewed, immutable build/release record. Values copied from the same running container being inspected are **not independent pins**. Required: exact container name `v79-sentinel-dell-monitor`; candidate release image ID `sha256:` + 64 lowercase hex characters; explicit non-root UID and GID; and exact reviewed Git blob SHA-1s for these three paths:
+The owner must pin **expected** values from a separately reviewed, immutable build/release record. Values copied from the same running container being inspected are **not independent pins**. Required: exact container name `v79-sentinel-dell-monitor`; candidate release image ID `sha256:` + 64 lowercase hex characters; explicit non-root UID and GID; and **both** exact SHA-256 content digests and reviewed Git blob SHA-1s for these three paths:
 
 - `sentinel.py`
 - `monitor_core.py`
 - `noc/inprocess_probe_receipt.py`
 
-The **observed** claim must contain only the fixed nine keys: `container`, `image_id`, `uid`, `gid`, `running`, `health`, `argv`, `sources`, `captured_at`. The gate rejects wrong/unknown keys, non-healthy or stopped containers, wrong image, wrong UID/GID, non-exact three-part Python `sentinel.py --live` argv, changed/missing/extra sources, nonregular files, symlink files and snapshots older than five minutes or more than 30 seconds in the future. Each observed source entry contains only `git_blob`, `regular`, `symlink`, never raw source bytes. Image IDs and SHA-1 file content digests are **matching identifiers**, not digital signatures.
+The **observed** claim must contain only the fixed nine keys: `container`, `image_id`, `uid`, `gid`, `running`, `health`, `argv`, `sources`, `captured_at`. The gate rejects wrong/unknown keys, non-healthy or stopped containers, wrong image, wrong UID/GID, non-exact three-part Python `sentinel.py --live` argv, changed/missing/extra sources, nonregular files, symlink files and snapshots older than five minutes or more than 30 seconds in the future. Each expected source entry contains `sha256` (64 lowercase hex, mandatory) and `git_blob` (40 lowercase hex); each observed source entry contains those same hashes plus `regular` and `symlink`, never raw source bytes. **SHA-256 is the primary content integrity check**; Git blob SHA-1 is secondary repository parity. Neither digest is a cryptographic process attestation or a publisher signature.
 
 No `docker inspect` environment variables, `docker logs`, mounted secrets, private signing keys, auth cookies, tokens, customer database rows, screenshots or arbitrary console output should be collected or pasted into chat/GitHub. Do not run an unreviewed helper from the internet on production. All production collection must use explicit read-only, owner-approved commands from a trusted account, and independent verification of the resulting evidence's origin is still required.
 
@@ -32,7 +32,7 @@ No `docker inspect` environment variables, `docker logs`, mounted secrets, priva
 - `UNKNOWN` / `READ_ONLY_RUNTIME_EVIDENCE_UNVERIFIED`: missing, stale, unexpected, unpinned or mismatched evidence. **Stop**; do not correct automatically, repair services, restart containers or rotate signing keys.
 - `SOURCE_PARITY_CANDIDATE_FOR_OWNER_REVIEW` / `METADATA_AND_DIGEST_CLAIMS_MATCH_NOT_ATTESTED`: the supplied metadata and digest **claims** match the separately pinned manifest. Still **not authorised to release**. The module's `sourceProvenanceVerified`, `imageSignatureVerified`, `collectorProcessAttested`, `sourceSignatureValid`, `independentOffhostObserverVerified`, `safeToDeploy`, `alertsDispatched` and `ticketCreationEnabled` flags **remain false** even on a match.
 
-Tests: `noc/tests/test_runtime_source_parity_gate.py`, 13 offline cases including altered release digest, root user, disabled process, tampered source digest, symlinks, extra keys, stale/future timestamps, unapproved CLI modes and no secret echo. The source-only bridge CI workflow syntax-checks both files and runs the suite. No generated signing keys, network probes, privileged reads, emails or Docker operations are part of these tests.
+Tests: `noc/tests/test_runtime_source_parity_gate.py`, 14 offline cases including altered release digest, root user, disabled process, tampered source digest, symlinks, extra keys, stale/future timestamps, unapproved CLI modes and no secret echo. The source-only bridge CI workflow syntax-checks both files and runs the suite. No generated signing keys, network probes, privileged reads, emails or Docker operations are part of these tests.
 
 ## Remaining gates after a parity candidate
 
