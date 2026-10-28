@@ -23,6 +23,7 @@ jobs:
         run: |
           set -euo pipefail
           python -B -m py_compile scripts/sentinel-dell-guarded-monitor-cutover.py
+          sha256sum scripts/sentinel-dell-guarded-monitor-cutover.py
           python -B - <<'PY'
           import ast, importlib.util, inspect
           from pathlib import Path
