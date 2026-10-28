@@ -39,18 +39,29 @@ def _protected_signer(key_dir, *, expected_fingerprint):
 
     expected_fingerprint is a SHA-256 pin of the **public key** established
     out-of-band by the owner. It must not be derived from untrusted input.
-    Directory fd + O_NOFOLLOW prevents final-component symlink traversal.
+    Component-wise dirfd + O_NOFOLLOW rejects ancestor and final symlinks.
     """
     if (type(expected_fingerprint) is not str or len(expected_fingerprint) != 64 or
             any(x not in "0123456789abcdef" for x in expected_fingerprint) or
-            type(key_dir) not in (str, Path) or os.geteuid() == 0):
+            not isinstance(key_dir, (str, Path)) or os.geteuid() == 0):
         raise OwnerSignerRefusal("PROTECTED_USER_PUBLIC_KEY_PIN_REQUIRED")
     directory = Path(key_dir)
-    if not directory.is_absolute() or directory.name in (".", ".."):
+    if (not directory.is_absolute() or ".." in directory.parts or
+            directory == directory.anchor):
         raise OwnerSignerRefusal("OWNER_PRIVATE_SIGNER_DIRECTORY_REQUIRED")
     dfd = kfd = None
     try:
-        dfd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        # O_NOFOLLOW on the final directory alone is insufficient. A symlink
+        # anywhere in an absolute path may replace the signer parent silently.
+        # Walk one component at a time from the root using stable dirfds.
+        dfd = os.open(directory.anchor, os.O_RDONLY | os.O_DIRECTORY)
+        for part in directory.parts[1:]:
+            child = os.open(
+                part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                dir_fd=dfd,
+            )
+            os.close(dfd)
+            dfd = child
         d = os.fstat(dfd)
         if (not stat.S_ISDIR(d.st_mode) or d.st_uid != os.geteuid()
                 or stat.S_IMODE(d.st_mode) != 0o700):
