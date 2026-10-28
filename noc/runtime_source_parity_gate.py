@@ -11,6 +11,7 @@ import re
 
 IMAGE_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
 BLOB_ID = re.compile(r"^[0-9a-f]{40}$")
+SOURCE_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 REQUIRED_SOURCES = frozenset({
     "sentinel.py", "monitor_core.py", "noc/inprocess_probe_receipt.py",
 })
@@ -107,13 +108,20 @@ def evaluate_runtime_source_parity(observed, expected, *, now=None):
             return result
         for name in REQUIRED_SOURCES:
             pin, item = pins[name], sources[name]
-            if (type(pin) is not str or not BLOB_ID.fullmatch(pin) or
+            if (type(pin) is not dict or
+                    set(pin) != {"git_blob", "sha256"} or
+                    type(pin["git_blob"]) is not str or
+                    not BLOB_ID.fullmatch(pin["git_blob"]) or
+                    type(pin["sha256"]) is not str or
+                    not SOURCE_SHA256.fullmatch(pin["sha256"]) or
                     type(item) is not dict or
-                    set(item) != {"git_blob", "regular", "symlink"} or
+                    set(item) != {"git_blob", "sha256", "regular", "symlink"} or
                     item["regular"] is not True or
                     item["symlink"] is not False or
                     type(item["git_blob"]) is not str or
-                    item["git_blob"] != pin):
+                    type(item["sha256"]) is not str or
+                    item["git_blob"] != pin["git_blob"] or
+                    item["sha256"] != pin["sha256"]):
                 return result
         # Never return untrusted paths, source bytes, IPs, user messages or IDs.
         return {
