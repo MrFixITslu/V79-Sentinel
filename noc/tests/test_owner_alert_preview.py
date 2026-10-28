@@ -43,6 +43,11 @@ class PreviewTests(unittest.TestCase):
   with self.assertRaises(ValueError):
    self.preview(BASE,recipient="other@example.invalid")
 
+ def test_poisoned_approved_service_name_rejected(self):
+  record=BASE|{"service":"Hub\\nBcc: outsider@example.test"}
+  with self.assertRaises(ValueError):
+   self.preview(record,approved_names=frozenset((record["service"],)))
+
  def test_recovered_has_fixed_sanitized_words(self):
   p=self.preview(BASE|{"kind":"recovered"})
   self.assertIn("recovery",p["subject"])
