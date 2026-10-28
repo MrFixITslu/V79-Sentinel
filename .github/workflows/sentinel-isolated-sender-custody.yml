@@ -1,0 +1,57 @@
+name: Sentinel isolated sender counter and custody policy
+
+on:
+  pull_request:
+    branches: [feature/p1-sourcebound-signed-pilot-20261028]
+    paths:
+      - "noc/isolated_sender_counter.py"
+      - "noc/isolated_key_mount_policy.py"
+      - "noc/tests/test_isolated_sender_custody.py"
+      - ".github/workflows/sentinel-isolated-sender-custody.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-no-network-sender-and-custody:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install previously tested pinned crypto dependency
+        run: python3 -m pip install 'cryptography==45.0.7'
+      - name: Isolated source signing, replay and key mount regression
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 -B -m unittest -v \
+            noc.tests.test_isolated_sender_custody \
+            noc.tests.test_isolated_signed_probe_pilot \
+            noc.tests.test_inprocess_probe_receipt \
+            noc.tests.test_legacy_monitor_proof \
+            noc.tests.test_signed_owned_evidence \
+            noc.tests.test_owned_replay_checkpoint \
+            noc.tests.test_owned_https_evidence_gate
+      - name: No runtime activation, key reads, network or secret output
+        run: |
+          python3 -B - <<'PY'
+          from pathlib import Path
+          import ast
+          files = [
+              Path("noc/isolated_sender_counter.py"),
+              Path("noc/isolated_key_mount_policy.py"),
+              Path("noc/tests/test_isolated_sender_custody.py"),
+          ]
+          for path in files:
+              ast.parse(path.read_text())
+          production = "\n".join(p.read_text() for p in files[:2])
+          for forbidden in ("subprocess", "urllib.request", "socket.", "SMTP",
+                            "send_email(", "docker ", "os.environ", "open(key_path",
+                            "read_bytes(", "load_pem_private_key("):
+              assert forbidden not in production, forbidden
+          print("SOURCE_ONLY_NO_SIGNER_RUNTIME_ACTIVATION=PASS")
+          PY
