@@ -32,3 +32,7 @@ These are the **draft candidate** files and differ deliberately from the owner-v
 - Current Dell legacy monitor remains healthy and unchanged; no new third file or draft DNS pin is deployed there. G2 release recovery remains accepted independently.
 
 **Decision: Candidate TRIAL BUILD AND NO-NETWORK DEMO SMOKE ACCEPTED. Distribution, runtime switching, trusted signing, and autonomous incident alerts are still HOLD.**
+
+## Final independent CI readback
+
+All **5/5** GitHub Actions workflow runs attached to substantive candidate workflow source SHA `359225f1f889aa8c20f1b96b64131a8ec144469e` completed **SUCCESS**: candidate image isolated build / no-network demo smoke `40762993639`, legacy proof bridge `40762993539`, private signer security gate `40762993343`, isolated regression `40762993328`, and private Docker staging tests `40762993498`. This completes CI review for the **temporary candidate build recipe**, not production release authorisation. The trial image was intentionally deleted and is not distributable from GitHub; no persistent signed image exists.
