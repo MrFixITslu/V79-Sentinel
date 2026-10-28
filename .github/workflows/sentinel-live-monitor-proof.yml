@@ -10,6 +10,7 @@ on:
       - 'noc/owner_alert_preview.py'
       - 'noc/tests/test_owner_alert_preview.py'
       - 'noc/owner_shadow_rehearsal.py'
+      - 'noc/owner_private_candidate.py'
       - 'noc/tests/test_owner_shadow_rehearsal.py'
       - 'scripts/sentinel_owner_shadow.py'
       - 'noc/tests/test_sentinel_owner_shadow_cli.py'
@@ -46,6 +47,7 @@ jobs:
             'noc/owner_alert_preview.py',
             'noc/tests/test_owner_alert_preview.py',
             'noc/owner_shadow_rehearsal.py',
+            'noc/owner_private_candidate.py',
             'noc/tests/test_owner_shadow_rehearsal.py',
             'scripts/sentinel_owner_shadow.py',
             'noc/tests/test_sentinel_owner_shadow_cli.py'
