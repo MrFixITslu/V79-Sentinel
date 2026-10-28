@@ -1,0 +1,58 @@
+name: Sentinel isolated Resend founder request contract
+
+on:
+  pull_request:
+    branches: [feature/p1-founder-ack-delivery-20261028]
+    paths:
+      - "noc/isolated_resend_founder_adapter.py"
+      - "noc/tests/test_isolated_resend_founder_adapter.py"
+      - ".github/workflows/sentinel-resend-founder-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  no-network-resend-founder-adapter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install previously pinned signature verifier
+        run: python3 -m pip install 'cryptography==45.0.7'
+      - name: Isolated Resend contract and existing security regression
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 -B -m unittest -v \
+            noc.tests.test_isolated_resend_founder_adapter \
+            noc.tests.test_isolated_founder_delivery_protocol \
+            noc.tests.test_isolated_atomic_advisory_outbox \
+            noc.tests.test_isolated_sender_custody \
+            noc.tests.test_isolated_signed_probe_pilot \
+            noc.tests.test_inprocess_probe_receipt \
+            noc.tests.test_legacy_monitor_proof \
+            noc.tests.test_signed_owned_evidence \
+            noc.tests.test_owned_replay_checkpoint \
+            noc.tests.test_owned_https_evidence_gate
+      - name: No transport, secrets, endpoint or runtime registration
+        run: |
+          python3 -B - <<'PY'
+          import ast
+          from pathlib import Path
+          path = Path("noc/isolated_resend_founder_adapter.py")
+          text = path.read_text()
+          ast.parse(text)
+          for forbidden in ("import socket", "import requests",
+                            "urllib.request", "os.environ",
+                            "resend.api_key", "subprocess.run",
+                            "send_email(", "load_pem_private_key("):
+              assert forbidden not in text, forbidden
+          assert 'v79sl.com' in text
+          assert "idempotencyKey" in text
+          assert "MAX_KEY_AGE_SECONDS = 23 * 3600" in text
+          print("RESEND_NO_TRANSPORT_NO_SEND=PASS")
+          PY
