@@ -1,0 +1,56 @@
+name: Sentinel isolated founder delivery protocol
+
+on:
+  pull_request:
+    branches: [feature/p1-atomic-advisory-outbox-20261028]
+    paths:
+      - "noc/isolated_founder_delivery_protocol.py"
+      - "noc/tests/test_isolated_founder_delivery_protocol.py"
+      - ".github/workflows/sentinel-founder-ack-protocol.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-founder-protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned Ed25519 verification dependency
+        run: python3 -m pip install 'cryptography==45.0.7'
+      - name: Synthetic founder-only ACK and existing cryptographic regressions
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 -B -m unittest -v \
+            noc.tests.test_isolated_founder_delivery_protocol \
+            noc.tests.test_isolated_atomic_advisory_outbox \
+            noc.tests.test_isolated_sender_custody \
+            noc.tests.test_isolated_signed_probe_pilot \
+            noc.tests.test_inprocess_probe_receipt \
+            noc.tests.test_legacy_monitor_proof \
+            noc.tests.test_signed_owned_evidence \
+            noc.tests.test_owned_replay_checkpoint \
+            noc.tests.test_owned_https_evidence_gate
+      - name: Assert no external dispatcher or production activation
+        run: |
+          python3 -B - <<'PY'
+          from pathlib import Path
+          import ast
+          p=Path("noc/isolated_founder_delivery_protocol.py")
+          source=p.read_text(encoding="utf-8")
+          ast.parse(source)
+          for forbidden in ("import requests", "import socket", "urllib.request",
+                            "smtp", "os.environ", "subprocess.run", "docker run",
+                            "send_email(", "ticket_create("):
+              assert forbidden not in source, forbidden
+          assert 'FOUNDER_ROUTE = "v79-founder-primary"' in source
+          assert "BEGIN IMMEDIATE" in source
+          assert "Ed25519PublicKey.from_public_bytes" in source
+          print("FOUNDER_ONLY_NO_NETWORK_NO_DELIVERY=PASS")
+          PY
