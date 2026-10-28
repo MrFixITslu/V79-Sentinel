@@ -5,6 +5,8 @@ on:
     paths:
       - 'images/sentinel-candidate.Dockerfile'
       - 'images/sentinel-candidate-requirements.lock'
+      - 'scripts/check_sentinel_candidate_lock.py'
+      - 'noc/tests/test_candidate_dependency_policy.py'
       - 'sentinel.py'
       - 'monitor_core.py'
       - 'lab_probe.py'
@@ -33,6 +35,12 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
+      - name: Security release gate — refuse outdated or unaudited dependency pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B scripts/check_sentinel_candidate_lock.py images/sentinel-candidate-requirements.lock
+          python -B -m unittest noc.tests.test_candidate_dependency_policy -v
       - name: Pull only the previously pinned base digest
         shell: bash
         run: |
