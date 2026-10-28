@@ -27,7 +27,7 @@ jobs:
           WHEELS="$RUNNER_TEMP/sentinel-locked-wheel-review"
           mkdir -p "$WHEELS"
           python -m pip download --only-binary=:all: --no-deps --dest "$WHEELS" \
-            'cryptography==45.0.7' 'cffi==2.0.0' 'pycparser==2.23'
+            'cryptography==50.0.2' 'cffi==2.0.0' 'pycparser==2.23'
           test "$(find "$WHEELS" -type f | wc -l)" -eq 3
           echo "BEGIN_PUBLIC_PYPI_WHEEL_SHA256"
           sha256sum "$WHEELS"/*.whl | sed "s#${WHEELS}/##"
