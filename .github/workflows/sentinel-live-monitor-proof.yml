@@ -11,6 +11,8 @@ on:
       - 'noc/tests/test_owner_alert_preview.py'
       - 'noc/owner_shadow_rehearsal.py'
       - 'noc/owner_private_candidate.py'
+      - 'noc/offhost_watchdog_policy.py'
+      - 'noc/tests/test_offhost_watchdog_policy.py'
       - 'noc/tests/test_owner_shadow_rehearsal.py'
       - 'scripts/sentinel_owner_shadow.py'
       - 'noc/tests/test_sentinel_owner_shadow_cli.py'
@@ -48,6 +50,8 @@ jobs:
             'noc/tests/test_owner_alert_preview.py',
             'noc/owner_shadow_rehearsal.py',
             'noc/owner_private_candidate.py',
+            'noc/offhost_watchdog_policy.py',
+            'noc/tests/test_offhost_watchdog_policy.py',
             'noc/tests/test_owner_shadow_rehearsal.py',
             'scripts/sentinel_owner_shadow.py',
             'noc/tests/test_sentinel_owner_shadow_cli.py'
@@ -59,6 +63,7 @@ jobs:
           python -B -m unittest noc.tests.test_owned_alert_state -v
           python -B -m unittest noc.tests.test_owner_alert_preview -v
           python -B -m unittest noc.tests.test_owner_shadow_rehearsal -v
+          python -B -m unittest noc.tests.test_offhost_watchdog_policy -v
           python -B -m unittest noc.tests.test_sentinel_owner_shadow_cli -v
           python -B -m unittest noc.tests.test_signed_owned_evidence -v
           python -B -m unittest noc.tests.test_owned_https_evidence_gate -v
