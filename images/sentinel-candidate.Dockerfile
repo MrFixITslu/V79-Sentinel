@@ -1,15 +1,20 @@
 # Isolated, source-only V79 Sentinel candidate. NOT a production deployment.
-# The builder MUST pass a concrete repo@sha256 base pinned at CI runtime.
-ARG BASE_IMAGE
-FROM ${BASE_IMAGE}
+# Independently recorded base manifest digest from GitHub trial run 40762993639.
+# Linux/amd64 only; change this digest only via a reviewed source update.
+FROM python@sha256:e697c81897302a4c4333bade000d98038fbb21eb064f8ee1fd42d02ebcd9d337
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 WORKDIR /app
 
-# Pinned package version, no private repositories, keys or customer data.
-RUN python -m pip install --no-cache-dir 'cryptography==45.0.7' \
+# Three exactly hash-pinned public wheels, no sdist, no other dependencies.
+# A wheel checksum mismatch fails the build before startup.
+COPY images/sentinel-candidate-requirements.lock /tmp/sentinel-requirements.lock
+RUN python -m pip install --no-cache-dir --only-binary=:all: \
+    --require-hashes --no-deps -r /tmp/sentinel-requirements.lock \
+ && python -m pip check \
+ && rm -f /tmp/sentinel-requirements.lock \
  && groupadd --gid 10001 sentinel \
  && useradd --uid 10001 --gid 10001 --home-dir /app \
     --shell /usr/sbin/nologin sentinel
