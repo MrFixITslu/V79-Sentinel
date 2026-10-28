@@ -1,0 +1,48 @@
+name: Sentinel isolated source-bound signing pilot
+
+on:
+  pull_request:
+    branches:
+      - feature/sentinel-live-monitor-proof-20261028
+    paths:
+      - "noc/isolated_signed_probe_pilot.py"
+      - "noc/tests/test_isolated_signed_probe_pilot.py"
+      - ".github/workflows/sentinel-sourcebound-signed-pilot.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  no-network-synthetic-source-bound-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the existing pinned cryptographic verifier dependency
+        run: python3 -m pip install 'cryptography==45.0.7'
+      - name: Fail-closed isolated contract and replay tests only
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 -B -m unittest -v             noc.tests.test_isolated_signed_probe_pilot             noc.tests.test_inprocess_probe_receipt             noc.tests.test_legacy_monitor_proof             noc.tests.test_signed_owned_evidence             noc.tests.test_owned_replay_checkpoint             noc.tests.test_owned_https_evidence_gate
+      - name: Source syntax and forbidden activation check
+        run: |
+          python3 -B - <<'PY'
+          import ast, pathlib
+          files = [
+              pathlib.Path("noc/isolated_signed_probe_pilot.py"),
+              pathlib.Path("noc/tests/test_isolated_signed_probe_pilot.py"),
+          ]
+          for path in files:
+              ast.parse(path.read_text(encoding="utf-8"))
+          source = files[0].read_text(encoding="utf-8")
+          assert "def sign_review_receipt(" in source
+          assert "import socket" not in source
+          assert "import subprocess" not in source
+          assert "sqlite3.connect(" not in source
+          print("ISOLATED_PILOT_ONLY=PASS")
+          PY
