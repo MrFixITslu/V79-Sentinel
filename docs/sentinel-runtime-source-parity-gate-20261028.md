@@ -57,3 +57,23 @@ The draft parity evaluator originally restricted `argv` to exactly three element
 **Independent CI final readback:** 4/4 GitHub Actions workflows completed SUCCESS on code SHA `956afaf5ffa8498402dcc7b730c96e41e60c59f0`: legacy bridge run `40759133091` (job log explicitly `Ran 16 tests ... OK` for the parity suite), private signer gate `40759133064`, full isolated regression `40759133061`, private Docker staging `40759133087`. These are synthetic/source tests only; the Dell was not changed.
 
 **Decision:** SOURCE PARITY GATE PREPARED. Production release **HOLD**.
+
+## 28 October — owner-confirmed live PID1 and legacy source baseline
+
+Following the previous read-only `docker inspect`, the owner ran a **read-only, in-container `/proc/1` and source-file hash inspection** against the *existing* healthy `v79-sentinel-dell-monitor`. Results:
+
+| Runtime/source | Owner-observed value | Interpretation |
+| --- | --- | --- |
+| `/proc/1/status` effective, real, saved, filesystem UIDs | `10001 10001 10001 10001` | Actual PID1 UID evidence: non-root |
+| `/proc/1/cmdline` equals expected seven-argument command | `True` | Actual PID1 command matches configured loopback `127.0.0.1:8787` invocation |
+| `sentinel.py` SHA-256 | `d28ab9c5a1b06c7936e71f3b85d42ecb329397430a5c0983139f6db81629e048` | Owner measured in running container |
+| `sentinel.py` Git blob SHA-1 | `26011d0301f768cf91e6badcc65f3c40bb07f2dd` | **Matches GitHub `main` exact file blob** independently fetched |
+| `monitor_core.py` SHA-256 | `6c97012e7568d73f06482c9feda90e2a3f5f829a388e36ce60787dfccba94d46` | Owner measured in running container |
+| `monitor_core.py` Git blob SHA-1 | `baacdb0858897a6d5547ac93674d6f39e4dfdbf0` | **Matches GitHub `main` exact file blob** independently fetched |
+| `noc/inprocess_probe_receipt.py` | `MISSING_OR_UNSAFE` | Not accessible as a safe regular file at the expected path; the read-only test does not distinguish missing from a symlink or nonregular file. Expected for the older image, **not** a site outage. |
+
+Previous Docker inspect also showed image `sha256:c9ae010b7971496855785f275bda9e40e33617044376e2225d5488e2fbfdc6fc`, configured UID:GID `10001:10001`, container RUNNING and HEALTHY. Actual UID and command now add **stronger legacy runtime parity evidence**, but are still not trusted release-signer attestation or a proof the entire container image is immutable/uncompromised. Neither exact two-file legacy SHA-1 match nor the owner-supplied SHA-256 values prove draft fixes are installed. GitHub `main` blob IDs independently confirmed for the two existing files. Do not infer third file contents or claim it definitely does not exist from `MISSING_OR_UNSAFE` alone.
+
+**/REDTEAM three choices:** (1) keep legacy image indefinitely: preserves health but leaves new security hardening out of runtime; (2) deploy draft immediately: REJECT, risks active monitoring/G2 and lacks source/image/key and rollback proofs; (3) SELECT: freeze this known-good baseline and build a **separate, immutable candidate image** with independently pinned digest and complete three-file dual hashes, then inspect the candidate without replacing the live container. Do not use the current historic image digest as an expected pin for the new release or generate a signer/alert key during candidate preparation.
+
+**Gate results:** LEGACY PID1 / TWO-SOURCE BASELINE PARITY **PASS**, based on owner-supplied fresh read-only evidence. NEW CANDIDATE IMAGE PARITY **NOT TESTED** (no candidate image digest, no 3rd file). Signed source provenance, off-host Dell-down observer, controlled automatic owner incident alert, image provenance and production promotion all **HOLD**. No deployment, restart, NPM/Hetrix/G2/WiPay change or email was triggered by this inspection.
