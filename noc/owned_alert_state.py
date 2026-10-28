@@ -24,6 +24,7 @@ UP = "REPORTED_UP_UNVERIFIED"
 REVIEW = "REVIEW_REPORTED"
 MIN_SPACING = 240
 MAX_AGE = 600
+MAX_REVIEW_EVENTS = 5000  # Bounded; full queue fails closed for owner review.
 STATES = frozenset((DOWN, UP, REVIEW))
 
 
@@ -196,6 +197,9 @@ def ingest_candidate(conn, envelope, *, trusted_collector_id,
                 first_bad=excluded.first_bad,first_good=excluded.first_good
             """, (trusted_collector_id, name, *nxt))
             if event:
+                backlog = conn.execute("SELECT COUNT(*) FROM advisory_outbox").fetchone()[0]
+                if backlog >= MAX_REVIEW_EVENTS:
+                    raise ValueError("Owner review outbox capacity reached")
                 conn.execute(
                     "INSERT INTO advisory_outbox"
                     "(collector,service,kind,sequence,observed_at) VALUES(?,?,?,?,?)",
@@ -224,7 +228,7 @@ def passive_heartbeat(last_observed, *, now=None, max_age=MAX_AGE):
     """Only meaningful when called independently OFF the monitored Dell."""
     try:
         time = datetime.now(timezone.utc) if now is None else now
-        if time.tzinfo is None or not isinstance(last_observed, str):
+        if not isinstance(time, datetime) or time.tzinfo is None or not isinstance(last_observed, str):
             raise ValueError()
         delta = (time.astimezone(timezone.utc).timestamp() - _epoch(last_observed))
         if type(max_age) is not int or not 60 <= max_age <= 3600 or not 0 <= delta <= max_age:
