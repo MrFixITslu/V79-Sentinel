@@ -6,6 +6,7 @@ import sqlite3
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import patch
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -185,6 +186,20 @@ class OwnedAdvisoryTests(unittest.TestCase):
         self.db.execute("PRAGMA synchronous=FULL")
         self.assertEqual(self.ingest(1)["status"],"UNKNOWN")
         self.assertEqual(self.ingest(2)["status"],"SIGNED_CANDIDATE_REVIEW_ONLY")
+
+    def test_review_queue_capacity_fails_closed_with_no_lost_cursor(self):
+        from noc import owned_alert_state
+        self.ingest(1,status="down")
+        with patch.object(owned_alert_state, "MAX_REVIEW_EVENTS", 0):
+            verdict=self.ingest(2,status="down")
+        self.assertEqual(verdict["status"],"UNKNOWN")
+        self.assertEqual(self.cursor(),(1,))
+        self.assertEqual(self.outbox(),[])
+        self.assertEqual(self.ingest(2,status="down")["outboxProposals"],1)
+
+    def test_invalid_external_watchdog_time_is_unknown(self):
+        self.assertEqual(passive_heartbeat("2026-10-28T02:00:00Z",now=0)["status"],"UNKNOWN")
+        self.assertEqual(passive_heartbeat("not-an-iso-timestamp",now=FIRST)["status"],"UNKNOWN")
 
     def test_raw_messages_never_in_advisory_database(self):
         self.ingest(1,status="down")
