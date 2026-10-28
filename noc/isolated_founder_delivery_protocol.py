@@ -188,7 +188,7 @@ def claim_founder_delivery(conn, *, route_id, now_epoch):
     """Return one bounded lease for an OFFLINE simulated transport only.
 
     A future external transport must independently enforce the approved owner
-    endpoint and never obtain Hub admin/Tiquet/WiPay credentials. Returning
+    endpoint and never obtain privileged app or payment credentials. Returning
     a lease does not mean a notification was sent.
     """
     _route(route_id)
