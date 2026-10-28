@@ -31,6 +31,7 @@ def founder_review_preview(record, *, approved_names, recipient,
     seq = record["sequence"]
     if (type(c) is not str or not COLLECTOR_RE.fullmatch(c) or
             type(service) is not str or service not in approved_names or
+            not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 ._-]{0,79}", service) or
             kind not in KIND or type(seq) is not int or seq < 1 or
             record["state"] != "review_required"):
         raise ValueError("Unapproved or unreviewed candidate event")
