@@ -47,3 +47,38 @@ The distinct private NOC explicitly reports `collector=simulated-only` and `inte
 | Complete G2 approved task | worker idle polls verified, no new task E2E | **NOT TESTED** |
 
 **Release decision: HOLD.** Do not treat CI, dashboard health or an API response as production end-to-end evidence. No code in this PR performs a live network probe, task action or email delivery.
+
+## 28 October — interim external monitoring acceptance (HetrixTools, read-only verified)
+
+**Scope and meaning:** independent third-party HTTP(S) availability checks for the nine V79-owned public front doors, **not** signed Sentinel collector provenance, host availability proof, application login health, threat detection, backup recovery, or verified delivered email. Do not label this as signed Sentinel production.
+
+After the owner corrected the canonical CombatZone domain to `combatzone.v79sl.com`, the existing HetrixTools monitor was updated **in place** (monitor `31703f7d9a044f18d310da16710dc391`), from obsolete `lasertag.v79sl.com` to `https://combatzone.v79sl.com/`. Its creation identity/history, one-minute cadence, 3-region check, TLS certificate and hostname validation, alerts/thresholds, and existing founder email contact list were preserved. No Nginx, Hub, LaserTag/CombatZone container, G2, or WiPay setting was changed. Owner's direct Dell probe of canonical site returned HTTPS 200 with TLS certificate verification success; generated NPM `30.conf` hosts the canonical domain.
+
+Connected HetrixTools API afterwards reported **9/9 active monitors UP** (one-minute checks):
+
+| External service | HTTPS endpoint | Latest reported status |
+| --- | --- | --- |
+| Hub | `https://hub.v79sl.com/` | UP |
+| Tiquet | `https://tiquet.v79sl.com/` | UP |
+| Vision79 Website | `https://v79sl.com/` | UP |
+| FFPRO | `https://ffpro.v79sl.com/` | UP |
+| Academy | `https://academy.v79sl.com/` | UP |
+| Marketing | `https://marketing.v79sl.com/` | UP |
+| POS | `https://pos.v79sl.com/` | UP |
+| Games | `https://games.v79sl.com/` | UP |
+| CombatZone | `https://combatzone.v79sl.com/` | UP from New York, London and São Paulo |
+
+Provider account limit: 9/15 uptime slots used; all current monitors lack a Hetrix server-agent SID. The default contact list includes the founder's already verified email `vision79slu@gmail.com`. **Email configured and verified ≠ owner received a downtime notification.** A Gmail search found one Hetrix verification email but no confirmed outage alert. No intentionally failed real target, test email or synthetic notification was sent. The previous `lasertag.v79sl.com` TLS SNI failures were caused by monitoring the obsolete domain and **must not be reported as a confirmed outage of CombatZone**.
+
+**Three routes /REDTEAM:** (1) treat external HTTPS 200 as proof of Sentinel security: REJECT; (2) run private signer or fake the NOC staging data as trusted: REJECT, active signer/source custody gate absent; (3) ACCEPT external web availability as limited independent coverage while separately proving founder alert receipt and host/off-host failure visibility, and keeping source-only signer/key review gated. Do not create a duplicate monitor or replace existing site routing.
+
+**Open acceptance actions** (independent of established G2 marker archival recovery):
+
+- A founder-approved *non-disruptive* single-recipient notification/delivery test, with actual inbox evidence, no customer data and no auto-retry flood.
+- A continuously running, separately hosted source of Dell-failure/monitoring-blindness evidence (the Hetrix HTTPS checks are external service-reachability, but cannot attribute all simultaneous failures specifically to Dell power vs ISP/reverse proxy).
+- Optional least-privilege Hetrix server agent for Dell CPU/RAM/disk and backup freshness only after installation/credential and resource security review; no agent installed yet.
+- Private signed collector production work remains **NO-GO**: verify physical source and process identity, protected pin/key ancestry, one durable sequence/outbox, accepted dedicated security tests, historical PR #14 security review, and supervisor/cost constraints. The PR #14 draft was closed, which **does not mean** its GitGuardian concern was cleared.
+- Remote Desktop Commander listed Dell online but a subsequent read-only execution returned a **monthly quota exhausted** error; do not retry/reconnect or count a Dell resource/backup audit as performed.
+- All five scheduled ChatGPT automation slots are already occupied; an additional hourly incident watch was refused by the plan. No existing automation was overwritten.
+
+**Production state:** external HTTPS reachability coverage ACCEPTED (limited), G2 incident archival ACCEPTED separately, signed Sentinel/NOC activation and founder alert delivery still **HOLD**. No production changes were made by this source-only note.
