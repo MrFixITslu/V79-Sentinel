@@ -1,0 +1,54 @@
+name: Sentinel isolated atomic advisory outbox
+
+on:
+  pull_request:
+    branches: [feature/p1-isolated-signer-custody-counter-20261028]
+    paths:
+      - "noc/isolated_atomic_advisory_outbox.py"
+      - "noc/tests/test_isolated_atomic_advisory_outbox.py"
+      - ".github/workflows/sentinel-atomic-advisory-outbox.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-atomic-advisory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned Ed25519 verification dependency
+        run: python3 -m pip install 'cryptography==45.0.7'
+      - name: Synthetic source sender receiver and outbox regression
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 -B -m unittest -v \
+            noc.tests.test_isolated_atomic_advisory_outbox \
+            noc.tests.test_isolated_sender_custody \
+            noc.tests.test_isolated_signed_probe_pilot \
+            noc.tests.test_inprocess_probe_receipt \
+            noc.tests.test_legacy_monitor_proof \
+            noc.tests.test_signed_owned_evidence \
+            noc.tests.test_owned_replay_checkpoint \
+            noc.tests.test_owned_https_evidence_gate
+      - name: Static no dispatch and no runtime registration
+        run: |
+          python3 -B - <<'PY'
+          from pathlib import Path
+          import ast
+          candidate = Path("noc/isolated_atomic_advisory_outbox.py")
+          code = candidate.read_text()
+          ast.parse(code)
+          for forbidden in ("import socket", "import requests", "urllib.request",
+                            "os.environ", "subprocess.run", "send_email(",
+                            "ticket_create(", "load_pem_private_key("):
+              assert forbidden not in code
+          assert "alertsDispatched" in code
+          assert "BEGIN IMMEDIATE" in code
+          print("NO_NETWORK_NO_DISPATCH_NO_PRODUCTION_ACTIVATION=PASS")
+          PY
