@@ -5,6 +5,8 @@ on:
     paths:
       - 'noc/legacy_monitor_proof.py'
       - 'noc/tests/test_legacy_monitor_proof.py'
+      - 'noc/owned_alert_state.py'
+      - 'noc/tests/test_owned_alert_state.py'
       - 'noc/signed_owned_evidence.py'
       - 'noc/owned_https_evidence_gate.py'
       - '.github/workflows/sentinel-live-monitor-proof.yml'
@@ -32,11 +34,14 @@ jobs:
           import ast
           for name in (
             'noc/legacy_monitor_proof.py',
-            'noc/tests/test_legacy_monitor_proof.py'
+            'noc/tests/test_legacy_monitor_proof.py',
+            'noc/owned_alert_state.py',
+            'noc/tests/test_owned_alert_state.py'
           ):
             ast.parse(open(name,encoding='utf-8').read(),filename=name)
           print('SYNTAX_PASS')
           PY
           python -B -m unittest noc.tests.test_legacy_monitor_proof -v
+          python -B -m unittest noc.tests.test_owned_alert_state -v
           python -B -m unittest noc.tests.test_signed_owned_evidence -v
           python -B -m unittest noc.tests.test_owned_https_evidence_gate -v
