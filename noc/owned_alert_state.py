@@ -18,6 +18,7 @@ import sqlite3
 import stat
 
 from .signed_owned_evidence import evaluate_signed_owned_evidence
+from .isolated_sqlite_durability import is_durable_isolated_sqlite
 
 DOWN = "REPORTED_DOWN"
 UP = "REPORTED_UP_UNVERIFIED"
@@ -30,7 +31,7 @@ STATES = frozenset((DOWN, UP, REVIEW))
 
 def _safe_store(conn):
     """Reject in-memory, weakened, world-accessible or symlinked SQLite stores."""
-    if not isinstance(conn, sqlite3.Connection) or conn.in_transaction:
+    if not is_durable_isolated_sqlite(conn):
         return False
     try:
         found = conn.execute("PRAGMA database_list").fetchall()
