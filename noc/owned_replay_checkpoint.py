@@ -6,8 +6,9 @@ Caller supplies a protected, fully synchronized file-backed sqlite connection.
 """
 from __future__ import annotations
 
-import os
 import sqlite3
+
+from .isolated_sqlite_durability import is_durable_isolated_sqlite
 
 from .signed_owned_evidence import evaluate_signed_owned_evidence
 
@@ -44,13 +45,9 @@ def evaluate_and_checkpoint_owned_evidence(
     if not isinstance(conn, sqlite3.Connection) or conn.in_transaction:
         return unavailable
     try:
-        # Reject in-memory and synchronous=OFF/NORMAL stores. Unverified replay
-        # checkpoints must not be described as persistent across restart.
-        databases = conn.execute("PRAGMA database_list").fetchall()
-        main_file = next((r[2] for r in databases if r[1] == "main"), "")
-        synchronous = conn.execute("PRAGMA synchronous").fetchone()
-        if (not isinstance(main_file, str) or not os.path.isabs(main_file)
-                or not synchronous or synchronous[0] < 2):
+        # A file-backed FULL-sync store still fails closed if journal mode
+        # is OFF/MEMORY; replay state must survive an interrupted commit.
+        if not is_durable_isolated_sqlite(conn):
             return unavailable
         conn.execute("BEGIN IMMEDIATE")
         row = conn.execute(
