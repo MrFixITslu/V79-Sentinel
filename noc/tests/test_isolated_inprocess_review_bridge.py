@@ -183,7 +183,7 @@ class InProcessSignedReviewBridgeTests(unittest.TestCase):
     def test_receiver_write_failure_does_not_create_review_or_reset_sender(self):
         tap = self.bridge()
         self.receiver.executescript("""
-          CREATE TEMP TRIGGER synthetic_denial
+          CREATE TRIGGER synthetic_denial
           BEFORE INSERT ON signed_advisory_outbox
           BEGIN SELECT RAISE(ABORT, 'test only'); END;
         """)
