@@ -1,0 +1,71 @@
+name: Sentinel in-process signed review bridge security gate (NO DEPLOY)
+
+on:
+  pull_request:
+    branches: [test/p1-isolated-signed-founder-chain-e2e-20261029]
+    paths:
+      - "noc/isolated_inprocess_review_bridge.py"
+      - "noc/tests/test_isolated_inprocess_review_bridge.py"
+      - ".github/workflows/sentinel-inprocess-signed-review-bridge.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-probe-loop-signed-review-and-regressions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Existing isolated Ed25519 test dependency
+        run: python3 -m pip install 'cryptography==45.0.7'
+      - name: Test actual mocked probe loop to separate review-only sender and receiver
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 -B -m unittest -v \
+            noc.tests.test_isolated_inprocess_review_bridge \
+            noc.tests.test_isolated_signed_founder_chain_e2e \
+            noc.tests.test_sentinel_mission_bridge_freshness \
+            noc.tests.test_owner_private_candidate \
+            noc.tests.test_isolated_sqlite_durability \
+            noc.tests.test_isolated_external_observer_gate \
+            noc.tests.test_isolated_resend_founder_adapter \
+            noc.tests.test_isolated_founder_delivery_protocol \
+            noc.tests.test_isolated_atomic_advisory_outbox \
+            noc.tests.test_isolated_sender_custody \
+            noc.tests.test_isolated_signed_probe_pilot \
+            noc.tests.test_inprocess_probe_receipt \
+            noc.tests.test_legacy_monitor_proof \
+            noc.tests.test_signed_owned_evidence \
+            noc.tests.test_owned_replay_checkpoint \
+            noc.tests.test_owned_https_evidence_gate
+      - name: Ensure main never registers signer and bridge cannot dispatch
+        run: |
+          python3 -B - <<'PY'
+          from pathlib import Path
+          import ast
+          source=Path("noc/isolated_inprocess_review_bridge.py").read_text()
+          monitor=Path("sentinel.py").read_text()
+          ast.parse(source)
+          assert "IsolatedInProcessReviewBridge" not in monitor
+          assert "args=(targets,store)" in monitor
+          for marker in (
+              '"sourceProvenanceVerified": False',
+              '"physicalProbeAttested": False',
+              '"trustedForExecutiveUse": False',
+              '"alertsDispatched": False',
+              '"productionApproved": False',
+          ):
+              assert marker in source
+          for forbidden in ("send_email(", "urlopen(", "requests.", "SMTP(",
+                            "subprocess.", "ThreadingHTTPServer(", "docker "):
+              assert forbidden not in source
+          print("PROBE_BOUND_REVIEW_ONLY_NO_PRODUCTION_HOOK=PASS")
+          PY
