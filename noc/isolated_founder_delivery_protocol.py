@@ -281,6 +281,7 @@ def accept_signed_founder_ack(conn, *, route_id, lease, ack,
             (ack["eventId"], FOUNDER_ROUTE),
         ).fetchone()
         if (not row or row[0] != "LEASED" or row[2] < now_epoch
+                or row[2] != lease["leaseUntil"]
                 or row[3] != ack["payloadSha256"]
                 or row[1] != hashlib.sha256(ack["leaseNonce"].encode()).hexdigest()):
             conn.rollback()
