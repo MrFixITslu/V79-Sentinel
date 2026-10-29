@@ -57,6 +57,9 @@ class BridgeStaleAndUnverifiedTests(TestCase):
             lambda v: v.update(services=[]),
             lambda v: v.update(last_check=(NOW+timedelta(minutes=2)).isoformat()),
             lambda v: v.update(last_check="bad-time"),
+            lambda v: v["services"][0].update(http=503),
+            lambda v: v["services"][0].update(name="Unknown Customer"),
+            lambda v: v["services"][0].update(name="V79 Hub"),
         )
         for mutate in modifications:
             sample = source_sample()
