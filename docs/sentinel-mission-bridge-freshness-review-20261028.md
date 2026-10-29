@@ -1,0 +1,13 @@
+# Sentinel mission bridge freshness review — source-only 2026-10-28
+
+PRODUCTION NOC UNCHANGED. Owner live terminal: healthy Dell monitor 7/7 UP HTTP 200 and pinned three SHA256 sources; healthy NOC reports collector=simulated-only and integrations=disabled. Eight old internal-stage containers exited 255 nine days earlier and were not touched. Existing Hetrix monitored nine external sites; supervised DOWN/UP founder mailbox drill passed.
+
+Three options REDTEAM: (1) change NOC readiness label to live without origin authentication — reject false security claim; (2) restart stale internal staging or swap healthy Docker containers — reject operational risk; (3) SELECT bounded authenticated read-only Mission Control bridge, still source-only and no trust promotion.
+
+Security finding: previous noc/sentinel_mission_bridge.py treated a mode=live string as a live label without checking age, error or complete intended scope. New draft requires mode=live, positive integer cycle, no collector error, UTC last-check within 600s and +30s clock skew, EXACT seven approved service names with no duplicates, and coherent up HTTP 200-399. Stale/demo/error/malformed/unapproved/partial/false HTTP claims display unknown, not green, and no HTTP or latency claims.
+
+All outputs include sourceSignatureValid=false, sourceProvenanceVerified=false, trustedForExecutiveUse=false and automaticSecurityAlertsEnabled=false even for fresh local observations. A missing optional QA endpoint reports QA unavailable without hiding live monitor metadata. Only fixed local 127.0.0.1:8787 GETs; existing NOC auth boundary is unchanged. No mail, Tiquet tickets, secrets, Docker, external endpoints or runtime settings.
+
+Synthetic tests cover normal reporting, stale/future clock, local error, demo, invalid cycle, incomplete or unapproved targets, duplicate names, false HTTP 503 UP, missing QA and unavailable monitor. A source-only workflow runs dedicated private signer and replay/outbox regressions. Passing these tests does not mean the live Docker image was changed.
+
+NO GO remains for trusted signed telemetry, automatic Sentinel incident notifications, independent signer/key custody, real-process source attestation, current GitGuardian finding disposition and independent security review issue #3. Historic eight staging containers must not be reset or removed merely because they are exited. Owner approval and immutable guarded deployment require full exact release review.
