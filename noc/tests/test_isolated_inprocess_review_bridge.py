@@ -65,8 +65,13 @@ class InProcessSignedReviewBridgeTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory(prefix="v79-offline-callback-")
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
-        self.sender = sqlite3.connect(self.root / "sender.sqlite3", timeout=3)
-        self.receiver = sqlite3.connect(self.root / "receiver.sqlite3", timeout=3)
+        self.root.chmod(0o700)
+        self.sender_path = self.root / "sender.sqlite3"
+        self.receiver_path = self.root / "receiver.sqlite3"
+        self.sender = sqlite3.connect(self.sender_path, timeout=3)
+        self.receiver = sqlite3.connect(self.receiver_path, timeout=3)
+        self.sender_path.chmod(0o600)
+        self.receiver_path.chmod(0o600)
         self.addCleanup(self.sender.close)
         self.addCleanup(self.receiver.close)
         for conn in (self.sender, self.receiver):
@@ -208,6 +213,26 @@ class InProcessSignedReviewBridgeTests(unittest.TestCase):
             self.bridge(approved_targets=TARGETS[:1] + TARGETS[:1])
         with self.assertRaises(ValueError):
             self.bridge(collector_id="bad collector id")
+
+    def test_rejects_world_readable_or_unsafe_parent_or_hardlinked_db(self):
+        self.sender_path.chmod(0o644)
+        with self.assertRaises(ValueError):
+            self.bridge()
+        self.sender_path.chmod(0o600)
+        self.receiver_path.chmod(0o640)
+        with self.assertRaises(ValueError):
+            self.bridge()
+        self.receiver_path.chmod(0o600)
+        self.root.chmod(0o755)
+        with self.assertRaises(ValueError):
+            self.bridge()
+        self.root.chmod(0o700)
+        alias = self.root / "receiver-hardlink.sqlite3"
+        alias.hardlink_to(self.receiver_path)
+        with self.assertRaises(ValueError):
+            self.bridge()
+        alias.unlink()
+        self.assertIsInstance(self.bridge(), IsolatedInProcessReviewBridge)
 
     def test_bad_external_receipt_not_equivalent_to_inprocess_probe(self):
         tap = self.bridge()
