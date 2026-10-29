@@ -237,5 +237,85 @@ class PrivateSignerSecurityTests(unittest.TestCase):
         self.assertIsNone(self.cursor())
 
 
+    def test_unsafe_off_or_memory_journal_refuses_real_private_checkpoint(self):
+        # File-backed and FULL synchronous alone are not a durable replay store.
+        for mode in ("OFF", "MEMORY"):
+            with self.subTest(mode=mode):
+                actual = self.db.execute(
+                    "PRAGMA journal_mode=" + mode
+                ).fetchone()[0].upper()
+                self.assertEqual(actual, mode)
+                self.assert_fail_closed(self.accept())
+                self.assertIsNone(self.cursor())
+                self.db.execute("PRAGMA journal_mode=DELETE")
+
+    def test_outbox_insert_failure_rolls_back_sequence_and_phase(self):
+        # One DOWN is only a candidate; second sustained DOWN proposes review.
+        first = self.accept(1, snapshot=self.snapshot(1, states=("down", "up")))
+        self.assertTrue(first["replayCommitted"])
+        self.assertEqual(self.cursor(), (1,))
+        before = self.db.execute(
+            "SELECT prior_sequence,bad_count FROM advisory_checks "
+            "WHERE collector=? AND service=?", (COLLECTOR, "Hub")
+        ).fetchone()
+        self.db.executescript("""
+          CREATE TEMP TRIGGER reject_test_outbox_insert
+          BEFORE INSERT ON advisory_outbox
+          BEGIN SELECT RAISE(FAIL, 'synthetic-only-outbox-denial'); END;
+        """)
+        second = self.accept(2, snapshot=self.snapshot(2, states=("down", "up")))
+        self.assert_fail_closed(second)
+        self.assertEqual(self.cursor(), (1,))
+        self.assertEqual(before, self.db.execute(
+            "SELECT prior_sequence,bad_count FROM advisory_checks "
+            "WHERE collector=? AND service=?", (COLLECTOR, "Hub")
+        ).fetchone())
+        self.assertEqual(
+            self.db.execute("SELECT COUNT(*) FROM advisory_outbox").fetchone()[0], 0
+        )
+        self.db.execute("DROP TRIGGER reject_test_outbox_insert")
+        recovered = self.accept(2, snapshot=self.snapshot(2, states=("down", "up")))
+        self.assertTrue(recovered["replayCommitted"])
+        self.assertEqual(recovered["outboxProposals"], 1)
+        self.assertEqual(self.cursor(), (2,))
+
+    def test_same_sequence_across_two_workers_never_accepts_twice(self):
+        from concurrent.futures import ThreadPoolExecutor
+
+        def worker(_index):
+            conn = sqlite3.connect(self.db_path, timeout=5)
+            try:
+                conn.execute("PRAGMA synchronous=FULL")
+                return accept_owner_private_candidate(
+                    self.snapshot(1), TARGETS, conn=conn,
+                    collector_id=COLLECTOR, key_dir=self.key_dir,
+                    expected_public_fingerprint=self.pin,
+                    now=START + timedelta(seconds=20),
+                )
+            finally:
+                conn.close()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(worker, (0, 1)))
+        self.assertEqual(sum(x["replayCommitted"] for x in results), 1)
+        self.assertEqual(self.cursor(), (1,))
+        for outcome in results:
+            self.assertFalse(outcome["sourceProvenanceVerified"])
+            self.assertFalse(outcome["alertsDispatched"])
+
+    def test_well_formed_fake_live_snapshot_never_proves_real_probe(self):
+        # The trusted source of the dict remains UNSOLVED: a forged 'live'
+        # snapshot can be signed, but MUST stay strictly review-only.
+        forged = self.snapshot()
+        result = self.accept(snapshot=forged)
+        self.assertEqual(result["status"], "SIGNED_CANDIDATE_REVIEW_ONLY")
+        self.assertFalse(result["sourceProvenanceVerified"])
+        self.assertFalse(result["continuousMonitoringVerified"])
+        self.assertFalse(result["trustedForExecutiveUse"])
+        self.assertFalse(result["alertsDispatched"])
+        self.assertFalse(result["ticketCreationEnabled"])
+
+
+
 if __name__ == "__main__":
     unittest.main()
