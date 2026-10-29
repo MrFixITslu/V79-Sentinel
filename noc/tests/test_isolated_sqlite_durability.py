@@ -12,6 +12,7 @@ import unittest
 from noc.isolated_sqlite_durability import is_durable_isolated_sqlite
 from noc.isolated_sender_counter import sign_with_atomic_sender_counter
 from noc.owned_replay_checkpoint import evaluate_and_checkpoint_owned_evidence
+from noc.owned_alert_state import _safe_store
 from noc.isolated_atomic_advisory_outbox import evaluate_and_enqueue_isolated_advisory
 from noc.isolated_founder_delivery_protocol import (
     FOUNDER_ROUTE, claim_founder_delivery, prepare_founder_delivery_store,
@@ -96,6 +97,18 @@ class UnsafeJournalModesFailClosed(unittest.TestCase):
             with self.subTest(mode=mode):
                 conn = self.connection("good_" + mode, mode)
                 self.assertTrue(is_durable_isolated_sqlite(conn))
+
+    def test_private_signed_advisory_ledger_unsafe_journals_rejected(self):
+        # Private candidate has stricter file and parent ownership checks.
+        # Keep those intact while rejecting OFF/MEMORY journal operation.
+        for mode in ("DELETE", "WAL", "OFF", "MEMORY"):
+            with self.subTest(mode=mode):
+                conn = self.connection("private_" + mode, mode)
+                path = Path(self.tmp.name) / ("private_" + mode + ".sqlite3")
+                path.chmod(0o600)
+                self.assertEqual(
+                    _safe_store(conn), mode in ("DELETE", "WAL")
+                )
 
     def test_normal_sync_and_memory_main_db_fail_closed(self):
         conn = self.connection("normal", "DELETE")
