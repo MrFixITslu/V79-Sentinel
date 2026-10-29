@@ -253,6 +253,10 @@ def accept_signed_founder_ack(conn, *, route_id, lease, ack,
                             "payloadSha256", "acceptedAtEpoch", "signature"}
             or type(ack["version"]) is not int or ack["version"] != 1
             or type(ack["acceptedAtEpoch"]) is not int
+            or type(lease.get("leaseUntil")) is not int
+            # No signed endpoint may claim it accepted a nonce before this
+            # specific lease existed. Allow <=30s clock skew only.
+            or ack["acceptedAtEpoch"] < lease["leaseUntil"] - LEASE_SECONDS - 30
             or not now_epoch-300 <= ack["acceptedAtEpoch"] <= now_epoch+30
             or type(pinned_receiver_public_key) is not bytes
             or len(pinned_receiver_public_key) != 32
