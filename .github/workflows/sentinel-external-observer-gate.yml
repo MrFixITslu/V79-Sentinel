@@ -1,0 +1,57 @@
+name: Sentinel isolated external observer reconciliation
+
+on:
+  pull_request:
+    branches: [feature/p1-resend-founder-isolated-20261028]
+    paths:
+      - "noc/isolated_external_observer_gate.py"
+      - "noc/tests/test_isolated_external_observer_gate.py"
+      - ".github/workflows/sentinel-external-observer-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-external-observer-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned Ed25519 verifier
+        run: python3 -m pip install 'cryptography==45.0.7'
+      - name: Synthetic external observer reconciliation and prior regressions
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 -B -m unittest -v \
+            noc.tests.test_isolated_external_observer_gate \
+            noc.tests.test_isolated_resend_founder_adapter \
+            noc.tests.test_isolated_founder_delivery_protocol \
+            noc.tests.test_isolated_atomic_advisory_outbox \
+            noc.tests.test_isolated_sender_custody \
+            noc.tests.test_isolated_signed_probe_pilot \
+            noc.tests.test_inprocess_probe_receipt \
+            noc.tests.test_legacy_monitor_proof \
+            noc.tests.test_signed_owned_evidence \
+            noc.tests.test_owned_replay_checkpoint \
+            noc.tests.test_owned_https_evidence_gate
+      - name: No network or automatic alert promotion
+        run: |
+          python3 -B - <<'PY'
+          from pathlib import Path
+          import ast
+          path = Path("noc/isolated_external_observer_gate.py")
+          source = path.read_text(encoding="utf-8")
+          ast.parse(source)
+          for forbidden in ("import requests", "import socket", "urllib.request",
+                            "os.environ", "subprocess.run", "send_email(",
+                            "load_pem_private_key("):
+              assert forbidden not in source, forbidden
+          assert '"resendNotificationAllowed": False' in source
+          assert '"trustedForExecutiveUse": False' in source
+          print("EXTERNAL_SOURCE_REVIEW_ONLY_NO_AUTOMATION=PASS")
+          PY
