@@ -7,6 +7,7 @@ on:
       - "noc/isolated_sqlite_durability.py"
       - "noc/isolated_sender_counter.py"
       - "noc/owned_replay_checkpoint.py"
+      - "noc/owned_alert_state.py"
       - "noc/isolated_atomic_advisory_outbox.py"
       - "noc/isolated_founder_delivery_protocol.py"
       - "noc/tests/test_isolated_sqlite_durability.py"
@@ -56,6 +57,7 @@ jobs:
           for forbidden in ("os.environ", "urllib.request", "socket.", "send_email(", "subprocess.run", "docker run"):
               assert forbidden not in code
           for filename in ("noc/isolated_sender_counter.py",
+                           "noc/owned_alert_state.py",
                            "noc/owned_replay_checkpoint.py",
                            "noc/isolated_atomic_advisory_outbox.py",
                            "noc/isolated_founder_delivery_protocol.py"):
