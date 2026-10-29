@@ -12,6 +12,9 @@ from urllib.error import URLError
 
 _BASE = "http://127.0.0.1:8787"
 _MAX = 250_000
+_EXPECTED_LIVE_NAMES = frozenset((
+    "Website", "V79 Hub", "Academy", "FFPRO", "V79 Tiquet", "Marketing", "V79 POS",
+))
 
 def _read_local(path: str) -> dict:
     if path not in ("/api/status", "/api/qa/latest"):
@@ -39,7 +42,15 @@ def _fresh_local_claim(status, raw_services, *, now=None) -> bool:
             or status.get("error") is not None
             or not isinstance(raw_services, list)
             or len(raw_services) != 7
-            or not all(isinstance(row, dict) for row in raw_services)):
+            or not all(isinstance(row, dict) for row in raw_services)
+            or {row.get("name") for row in raw_services} != _EXPECTED_LIVE_NAMES
+            or any(
+                row.get("status") == "up" and not (
+                    type(row.get("http")) is int
+                    and 200 <= row["http"] <= 399
+                )
+                for row in raw_services
+            )):
         return False
     stamp = status.get("last_check")
     if not isinstance(stamp, str) or not 18 <= len(stamp) <= 42:
