@@ -12,7 +12,9 @@ receiver process, off-host attestation and release approval remain NO-GO.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 import sqlite3
+import stat
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
@@ -35,7 +37,31 @@ def _separate_protected_stores(sender, receiver) -> bool:
         if len(a) != 1 or len(b) != 1:
             return False
         left, right = a[0][2], b[0][2]
-        return bool(left and right and not os.path.samefile(left, right))
+        def protected(path):
+            if (not path or not os.path.isabs(path)
+                    or os.path.normpath(path) != path
+                    # All path components must already be real directories.
+                    # SQLite itself still opens the file: this metadata
+                    # preflight is NOT a process or inode attestation.
+                    or os.path.realpath(path) != path):
+                return False
+            file = Path(path)
+            parent = file.parent
+            info = file.stat()
+            directory = parent.stat()
+            return (
+                stat.S_ISREG(info.st_mode)
+                and info.st_uid == os.geteuid()
+                and info.st_nlink == 1
+                and not (info.st_mode & 0o077)
+                and stat.S_ISDIR(directory.st_mode)
+                and directory.st_uid == os.geteuid()
+                and not (directory.st_mode & 0o077)
+            )
+        return bool(
+            protected(left) and protected(right)
+            and not os.path.samefile(left, right)
+        )
     except (OSError, sqlite3.Error):
         return False
 
