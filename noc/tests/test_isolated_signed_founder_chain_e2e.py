@@ -122,12 +122,12 @@ class FullChainOfflineTests(unittest.TestCase):
             approved_founder=RECIPIENT, now_epoch=epoch,
         )
 
-    def ack(self, lease, *, signer=None):
+    def ack(self, lease, *, signer=None, accepted_epoch=EPOCH + 1):
         content = {
             "version": 1, "eventId": lease["eventId"],
             "routeId": lease["routeId"], "leaseNonce": lease["leaseNonce"],
             "payloadSha256": lease["payloadSha256"],
-            "acceptedAtEpoch": EPOCH + 1,
+            "acceptedAtEpoch": accepted_epoch,
         }
         key = signer or self.ack_key
         content["signature"] = base64.urlsafe_b64encode(
@@ -192,25 +192,26 @@ class FullChainOfflineTests(unittest.TestCase):
         ))  # Old timed-out lease cannot be acknowledged.
         self.assertFalse(accept_signed_founder_ack(
             self.receiver, route_id=FOUNDER_ROUTE, lease=second_lease,
-            ack=self.ack(second_lease, signer=Ed25519PrivateKey.generate()),
-            pinned_receiver_public_key=self.ack_public, now_epoch=EPOCH + 1,
+            ack=self.ack(second_lease, signer=Ed25519PrivateKey.generate(),
+                         accepted_epoch=EPOCH + 62),
+            pinned_receiver_public_key=self.ack_public, now_epoch=EPOCH + 62,
         ))
         self.assertTrue(accept_signed_founder_ack(
             self.receiver, route_id=FOUNDER_ROUTE, lease=second_lease,
-            ack=self.ack(second_lease), pinned_receiver_public_key=self.ack_public,
-            now_epoch=EPOCH + 1,
+            ack=self.ack(second_lease, accepted_epoch=EPOCH + 62),
+            pinned_receiver_public_key=self.ack_public, now_epoch=EPOCH + 62,
         ))  # Ephemeral simulated endpoint signature, NOT a real mailbox receipt.
         self.assertFalse(accept_signed_founder_ack(
             self.receiver, route_id=FOUNDER_ROUTE, lease=second_lease,
-            ack=self.ack(second_lease), pinned_receiver_public_key=self.ack_public,
-            now_epoch=EPOCH + 1,
+            ack=self.ack(second_lease, accepted_epoch=EPOCH + 62),
+            pinned_receiver_public_key=self.ack_public, now_epoch=EPOCH + 62,
         ))
 
         recovered = claim_founder_delivery(
-            self.receiver, route_id=FOUNDER_ROUTE, now_epoch=EPOCH + 2,
+            self.receiver, route_id=FOUNDER_ROUTE, now_epoch=EPOCH + 63,
         )
         self.assertEqual(recovered["eventId"], f"{COLLECTOR}:44")
-        recovery_request = self.reserve(recovered, epoch=EPOCH + 2)
+        recovery_request = self.reserve(recovered, epoch=EPOCH + 63)
         self.assertIn("recovery", recovery_request["subject"].lower())
         self.assertNotEqual(request["idempotencyKey"],
                             recovery_request["idempotencyKey"])
@@ -222,6 +223,36 @@ class FullChainOfflineTests(unittest.TestCase):
             )
         ))
         self.assertEqual(self.count("resend_founder_submission"), 2)
+
+    def test_signed_ack_before_renewed_lease_origin_is_not_delivery(self):
+        envelope = self.sign(41, fault=True)
+        self.assertTrue(self.receive(envelope)["advisoryOutboxPersisted"])
+        self.assertEqual(self.stage(), "QUEUED_REVIEW_ONLY")
+        first = claim_founder_delivery(
+            self.receiver, route_id=FOUNDER_ROUTE, now_epoch=EPOCH,
+        )
+        self.assertIsNotNone(first)
+        renewed = claim_founder_delivery(
+            self.receiver, route_id=FOUNDER_ROUTE, now_epoch=EPOCH + 61,
+        )
+        self.assertIsNotNone(renewed)
+        # Signed by the RIGHT test receiver but timestamp predates this
+        # second lease issuance by 60s. Must not turn into founder ACK.
+        self.assertFalse(accept_signed_founder_ack(
+            self.receiver, route_id=FOUNDER_ROUTE, lease=renewed,
+            ack=self.ack(renewed, accepted_epoch=EPOCH + 1),
+            pinned_receiver_public_key=self.ack_public,
+            now_epoch=EPOCH + 62,
+        ))
+        self.assertEqual(self.receiver.execute(
+            "SELECT state FROM founder_delivery_queue"
+        ).fetchone(), ("LEASED",))
+        self.assertTrue(accept_signed_founder_ack(
+            self.receiver, route_id=FOUNDER_ROUTE, lease=renewed,
+            ack=self.ack(renewed, accepted_epoch=EPOCH + 62),
+            pinned_receiver_public_key=self.ack_public,
+            now_epoch=EPOCH + 62,
+        ))
 
     def test_modified_envelope_and_replay_never_create_owner_notifications(self):
         good = self.sign(41, fault=True)
