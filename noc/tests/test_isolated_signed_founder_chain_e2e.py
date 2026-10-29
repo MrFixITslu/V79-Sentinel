@@ -247,6 +247,15 @@ class FullChainOfflineTests(unittest.TestCase):
         self.assertEqual(self.receiver.execute(
             "SELECT state FROM founder_delivery_queue"
         ).fetchone(), ("LEASED",))
+        # Attacker controls caller lease dictionary, but not durable DB row.
+        # A false shorter leaseUntil must not bypass chronology validation.
+        falsified = dict(renewed, leaseUntil=EPOCH + 30)
+        self.assertFalse(accept_signed_founder_ack(
+            self.receiver, route_id=FOUNDER_ROUTE, lease=falsified,
+            ack=self.ack(falsified, accepted_epoch=EPOCH + 1),
+            pinned_receiver_public_key=self.ack_public,
+            now_epoch=EPOCH + 62,
+        ))
         self.assertTrue(accept_signed_founder_ack(
             self.receiver, route_id=FOUNDER_ROUTE, lease=renewed,
             ack=self.ack(renewed, accepted_epoch=EPOCH + 62),
