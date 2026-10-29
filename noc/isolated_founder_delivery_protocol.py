@@ -11,9 +11,10 @@ import base64
 from datetime import datetime, timezone
 import hashlib
 import json
-import os
 import secrets
 import sqlite3
+
+from .isolated_sqlite_durability import is_durable_isolated_sqlite
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -29,13 +30,7 @@ QUEUE_STATES = ("PENDING", "LEASED", "ACKED", "PAUSED")
 
 
 def _durable(conn):
-    if not isinstance(conn, sqlite3.Connection) or conn.in_transaction:
-        return False
-    databases = conn.execute("PRAGMA database_list").fetchall()
-    main = next((r[2] for r in databases if r[1] == "main"), "")
-    sync = conn.execute("PRAGMA synchronous").fetchone()
-    return isinstance(main, str) and os.path.isabs(main) and bool(sync) and sync[0] >= 2
-
+    return is_durable_isolated_sqlite(conn)
 
 def _route(route):
     if route != FOUNDER_ROUTE or type(route) is not str:

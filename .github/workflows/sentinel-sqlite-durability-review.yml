@@ -1,0 +1,66 @@
+name: Sentinel isolated SQLite durability security review
+
+on:
+  pull_request:
+    branches: [feature/p1-hetrix-external-observer-gate-20261028]
+    paths:
+      - "noc/isolated_sqlite_durability.py"
+      - "noc/isolated_sender_counter.py"
+      - "noc/owned_replay_checkpoint.py"
+      - "noc/owned_alert_state.py"
+      - "noc/isolated_atomic_advisory_outbox.py"
+      - "noc/isolated_founder_delivery_protocol.py"
+      - "noc/tests/test_isolated_sqlite_durability.py"
+      - ".github/workflows/sentinel-sqlite-durability-review.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fail-closed-journal-and-full-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned signature dependency
+        run: python3 -m pip install 'cryptography==45.0.7'
+      - name: Isolated durability regression and full source-level security suite
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 -B -m unittest -v \
+            noc.tests.test_isolated_sqlite_durability \
+            noc.tests.test_isolated_external_observer_gate \
+            noc.tests.test_isolated_resend_founder_adapter \
+            noc.tests.test_isolated_founder_delivery_protocol \
+            noc.tests.test_isolated_atomic_advisory_outbox \
+            noc.tests.test_isolated_sender_custody \
+            noc.tests.test_isolated_signed_probe_pilot \
+            noc.tests.test_inprocess_probe_receipt \
+            noc.tests.test_legacy_monitor_proof \
+            noc.tests.test_signed_owned_evidence \
+            noc.tests.test_owned_replay_checkpoint \
+            noc.tests.test_owned_https_evidence_gate
+      - name: Check durable journaling and absence of runtime activation
+        run: |
+          python3 -B - <<'PY'
+          from pathlib import Path
+          import ast
+          path=Path("noc/isolated_sqlite_durability.py")
+          code=path.read_text(encoding="utf-8")
+          ast.parse(code)
+          assert '("delete", "truncate", "persist", "wal")' in code
+          for forbidden in ("os.environ", "urllib.request", "socket.", "send_email(", "subprocess.run", "docker run"):
+              assert forbidden not in code
+          for filename in ("noc/isolated_sender_counter.py",
+                           "noc/owned_alert_state.py",
+                           "noc/owned_replay_checkpoint.py",
+                           "noc/isolated_atomic_advisory_outbox.py",
+                           "noc/isolated_founder_delivery_protocol.py"):
+              assert "is_durable_isolated_sqlite" in Path(filename).read_text()
+          print("JOURNAL_DURABILITY_NO_NETWORK_NO_DEPLOY=PASS")
+          PY

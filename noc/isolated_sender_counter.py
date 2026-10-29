@@ -9,8 +9,9 @@ rollback of BOTH signer and receiver disks. Do not share monitor /app/data.
 """
 from __future__ import annotations
 
-import os
 import sqlite3
+
+from .isolated_sqlite_durability import is_durable_isolated_sqlite
 
 from .isolated_signed_probe_pilot import sign_review_receipt
 from .signed_owned_evidence import COLLECTOR_RE, MAX_SEQUENCE
@@ -28,14 +29,7 @@ def prepare_isolated_sender_store(conn: sqlite3.Connection) -> None:
 
 
 def _durable(conn):
-    if not isinstance(conn, sqlite3.Connection) or conn.in_transaction:
-        return False
-    locations = conn.execute("PRAGMA database_list").fetchall()
-    main = next((entry[2] for entry in locations if entry[1] == "main"), "")
-    sync = conn.execute("PRAGMA synchronous").fetchone()
-    return (isinstance(main, str) and os.path.isabs(main)
-            and bool(sync) and sync[0] >= 2)
-
+    return is_durable_isolated_sqlite(conn)
 
 def sign_with_atomic_sender_counter(
     receipt, *, conn, signer, collector_id, approved_targets, now=None
