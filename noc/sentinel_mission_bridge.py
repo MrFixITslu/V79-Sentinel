@@ -6,6 +6,7 @@ browser QA screenshots. The NOC serves only a small allowlisted JSON summary.
 """
 from __future__ import annotations
 import json
+from datetime import datetime, timezone
 from urllib.request import urlopen
 from urllib.error import URLError
 
@@ -29,25 +30,58 @@ def _read_local(path: str) -> dict:
 def _short(value, maximum=100):
     return value[:maximum] if isinstance(value,str) else ""
 
-def snapshot() -> dict:
+def _fresh_local_claim(status, raw_services, *, now=None) -> bool:
+    """A recent locally *reported* sample, never authenticated probe provenance."""
+    if (not isinstance(status, dict)
+            or status.get("mode") != "live"
+            or type(status.get("cycle")) is not int
+            or status["cycle"] < 1
+            or status.get("error") is not None
+            or not isinstance(raw_services, list)
+            or len(raw_services) != 7
+            or not all(isinstance(row, dict) for row in raw_services)):
+        return False
+    stamp = status.get("last_check")
+    if not isinstance(stamp, str) or not 18 <= len(stamp) <= 42:
+        return False
+    try:
+        parsed = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+        clock = datetime.now(timezone.utc) if now is None else now
+        if (parsed.tzinfo is None or parsed.utcoffset().total_seconds() != 0
+                or not isinstance(clock, datetime) or clock.tzinfo is None):
+            return False
+        seconds = (clock.astimezone(timezone.utc) - parsed).total_seconds()
+        return -30 <= seconds <= 600
+    except (TypeError, ValueError, OverflowError):
+        return False
+
+
+def snapshot(*, now=None) -> dict:
     status = _read_local("/api/status")
-    qa = _read_local("/api/qa/latest")
+    # QA is advisory. A failed QA endpoint must not hide a valid monitor
+    # observation, but it can never imply an authenticated application test.
+    try:
+        qa = _read_local("/api/qa/latest")
+    except (OSError, ValueError, TypeError, KeyError, TimeoutError):
+        qa = {"state": "unavailable", "results": []}
     raw_services = status.get("services") or []
     raw_results = qa.get("results") or []
     if not isinstance(raw_services,list) or not isinstance(raw_results,list):
         raise ValueError("Malformed Mission Control service list")
+    fresh = _fresh_local_claim(status, raw_services, now=now)
     services=[]
     for item in raw_services[:24]:
         if not isinstance(item,dict): continue
         raw_state=item.get("status")
-        state=raw_state if raw_state in ("up","down","degraded","unknown") else "unknown"
+        state=(raw_state if fresh and raw_state in ("up","down","degraded","unknown")
+               else "unknown")
         http=item.get("http")
         latency=item.get("ms")
         services.append({
             "name":_short(item.get("name"),65),
             "state":state,
-            "http":http if type(http) is int and 100<=http<=599 else None,
-            "latencyMs":latency if type(latency) is int and 0<=latency<=120_000 else None,
+            "http":http if fresh and type(http) is int and 100<=http<=599 else None,
+            "latencyMs":latency if fresh and type(latency) is int and 0<=latency<=120_000 else None,
         })
     results=[]
     counts={"pass":0,"review":0,"auth-gated":0,"fail":0,"other":0}
@@ -64,7 +98,12 @@ def snapshot() -> dict:
             })
     return {
         "source":"local-mission-control",
-        "monitorMode":"live" if status.get("mode")=="live" else "staging",
+        "monitorMode":"live" if fresh else "stale-or-unverified",
+        "monitorSampleFresh":fresh,
+        "sourceSignatureValid":False,
+        "sourceProvenanceVerified":False,
+        "trustedForExecutiveUse":False,
+        "automaticSecurityAlertsEnabled":False,
         "lastCheck":_short(status.get("last_check"),48),
         "services":services,
         "qa":{
