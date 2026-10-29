@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  independent-private-signer-acceptance:
+  synthetic-private-signer-tests-only:
     runs-on: ubuntu-24.04
     timeout-minutes: 6
     steps:
@@ -32,15 +32,28 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.12'
-      - name: Run dedicated private signer security suite in isolation
+      - name: Run dedicated signer and durable replay tests without production inputs
         env:
           PYTHONDONTWRITEBYTECODE: '1'
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install 'cryptography==45.0.7'
-          python -B -m unittest noc.tests.test_owner_private_candidate -v
-      - name: No deployment or telemetry claims
+          python -B -m unittest -v \
+            noc.tests.test_owner_private_candidate \
+            noc.tests.test_isolated_sqlite_durability
+      - name: Enforce review-only evidence without source attestation
         run: |
-          echo 'SOURCE_ONLY_NO_KEY_CREATION_NO_CONTAINER_CHANGES'
-          echo 'INDEPENDENT_SOURCE_PROVENANCE_AND_OFFHOST_ALERT_GATE_STILL_REQUIRED'
+          python -B - <<'PY'
+          from pathlib import Path
+          source = Path('noc/owner_private_candidate.py').read_text()
+          for sentinel in ('"sourceProvenanceVerified": False',
+                           '"trustedForExecutiveUse": False',
+                           '"continuousMonitoringVerified": False',
+                           '"alertsDispatched": False',
+                           '"ticketCreationEnabled": False'):
+              assert sentinel in source, 'REVIEW_ONLY_PROTECTION_MISSING'
+          assert 'O_NOFOLLOW' in source
+          print('SYNTHETIC_SIGNER_TESTS_ONLY_NO_PRODUCTION_CLEARANCE=PASS')
+          PY
+          echo 'INDEPENDENT_SOURCE_PROVENANCE_AND_GITGUARDIAN_HOLD_STILL_REQUIRED'
