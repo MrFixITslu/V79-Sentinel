@@ -17,6 +17,56 @@ ORIGIN = os.environ.get("SENTINEL_NOC_EXTERNAL_ORIGIN", "")
 PASSWORD = Path("/app/data/synthetic-pilot-operator-password")
 
 
+def _read_private_pilot_password(path: Path) -> str:
+    """Read one local staging-only secret, without following symlink components.
+
+    Never log or return secret bytes on failure; no network or credential
+    creation. The directory components are opened relative to verified dirfds.
+    """
+    import stat
+
+    if not isinstance(path, Path) or not path.is_absolute() or ".." in path.parts:
+        raise RuntimeError("STOP: private pilot credential path invalid")
+    dfd = keyfd = None
+    try:
+        dfd = os.open(path.anchor, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+        for component in path.parts[1:-1]:
+            child = os.open(
+                component, os.O_RDONLY | os.O_DIRECTORY
+                | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=dfd,
+            )
+            os.close(dfd)
+            dfd = child
+        keyfd = os.open(
+            path.name, os.O_RDONLY | os.O_NOFOLLOW
+            | os.O_CLOEXEC | os.O_NONBLOCK, dir_fd=dfd,
+        )
+        s = os.fstat(keyfd)
+        if (
+            not stat.S_ISREG(s.st_mode)
+            or s.st_uid not in (os.geteuid(), 0)
+            or s.st_nlink != 1
+            or s.st_mode & 0o077
+            or not 8 <= s.st_size <= 256
+        ):
+            raise RuntimeError("STOP: private pilot credential metadata unsafe")
+        data = os.read(keyfd, 257)
+        if len(data) > 256:
+            raise RuntimeError("STOP: private pilot credential too large")
+        secret = data.decode("utf-8").strip()
+        if not (8 <= len(secret) <= 256 and all(33 <= ord(ch) <= 126 for ch in secret)):
+            raise RuntimeError("STOP: private pilot credential invalid")
+        return secret
+    except (OSError, UnicodeDecodeError):
+        raise RuntimeError("STOP: private pilot credential unavailable") from None
+    finally:
+        if keyfd is not None:
+            os.close(keyfd)
+        if dfd is not None:
+            os.close(dfd)
+
+
+
 def request(opener, path, method="GET", payload=None, origin=False):
     headers = {"Content-Type": "application/json"}
     if origin:
@@ -34,11 +84,9 @@ def request(opener, path, method="GET", payload=None, origin=False):
 
 
 def main():
-    if not ORIGIN.startswith("http://127.0.0.1:") or not PASSWORD.is_file():
-        raise SystemExit("STOP: synthetic local origin or private pilot password not configured")
-    if PASSWORD.stat().st_mode & 0o077:
-        raise SystemExit("STOP: password file permissions too broad")
-    password = PASSWORD.read_text().strip()
+    if not ORIGIN.startswith("http://127.0.0.1:"):
+        raise SystemExit("STOP: synthetic local origin not configured")
+    password = _read_private_pilot_password(PASSWORD)
     cookie_jar = CookieJar()
     opener = build_opener(HTTPCookieProcessor(cookie_jar))
     code, health = request(opener, "/readyz")
