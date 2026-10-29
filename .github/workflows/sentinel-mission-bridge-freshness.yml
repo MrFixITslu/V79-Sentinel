@@ -1,0 +1,65 @@
+name: Sentinel mission bridge fail-closed source review
+
+on:
+  pull_request:
+    branches: [test/p1-private-signer-exact-gate-20261028]
+    paths:
+      - "noc/sentinel_mission_bridge.py"
+      - "noc/tests/test_sentinel_mission_bridge_freshness.py"
+      - ".github/workflows/sentinel-mission-bridge-freshness.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-only-mission-bridge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Pinned signature dependency for stacked isolated suites
+        run: python3 -m pip install 'cryptography==45.0.7'
+      - name: Fail-closed local bridge, dedicated signer and state-machine regression
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 -B -m unittest -v \
+            noc.tests.test_sentinel_mission_bridge_freshness \
+            noc.tests.test_owner_private_candidate \
+            noc.tests.test_isolated_sqlite_durability \
+            noc.tests.test_isolated_external_observer_gate \
+            noc.tests.test_isolated_resend_founder_adapter \
+            noc.tests.test_isolated_founder_delivery_protocol \
+            noc.tests.test_isolated_atomic_advisory_outbox \
+            noc.tests.test_isolated_sender_custody \
+            noc.tests.test_isolated_signed_probe_pilot \
+            noc.tests.test_inprocess_probe_receipt \
+            noc.tests.test_legacy_monitor_proof \
+            noc.tests.test_signed_owned_evidence \
+            noc.tests.test_owned_replay_checkpoint \
+            noc.tests.test_owned_https_evidence_gate
+      - name: Require zero trust promotion and no sender or deploy in bridge
+        run: |
+          python3 -B - <<'PY'
+          from pathlib import Path
+          import ast
+          p=Path("noc/sentinel_mission_bridge.py")
+          s=p.read_text()
+          ast.parse(s)
+          for marker in ('"monitorSampleFresh":fresh',
+                         '"sourceProvenanceVerified":False',
+                         '"sourceSignatureValid":False',
+                         '"automaticSecurityAlertsEnabled":False',
+                         '"trustedForExecutiveUse":False',
+                         '"stale-or-unverified"'):
+              assert marker in s, marker
+          for bad in ("send_email(", "requests.post(", "os.environ", "subprocess.", "docker "):
+              assert bad not in s, bad
+          print("MISSION_BRIDGE_NO_AUTOTRUST_NO_DEPLOY=PASS")
+          PY
