@@ -8,8 +8,9 @@ connection must be independently provisioned by a future reviewed caller.
 from __future__ import annotations
 
 import json
-import os
 import sqlite3
+
+from .isolated_sqlite_durability import is_durable_isolated_sqlite
 
 from .signed_owned_evidence import evaluate_signed_owned_evidence
 from .owned_replay_checkpoint import prepare_owned_replay_store
@@ -35,13 +36,7 @@ def prepare_isolated_advisory_outbox(conn: sqlite3.Connection) -> None:
 
 
 def _durable(conn):
-    if not isinstance(conn, sqlite3.Connection) or conn.in_transaction:
-        return False
-    databases = conn.execute("PRAGMA database_list").fetchall()
-    main = next((row[2] for row in databases if row[1] == "main"), "")
-    sync = conn.execute("PRAGMA synchronous").fetchone()
-    return isinstance(main, str) and os.path.isabs(main) and bool(sync) and sync[0] >= 2
-
+    return is_durable_isolated_sqlite(conn)
 
 def evaluate_and_enqueue_isolated_advisory(
     envelope, *, conn, trusted_collector_id, pinned_public_key,
