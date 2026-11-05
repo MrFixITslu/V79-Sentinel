@@ -1,0 +1,54 @@
+{
+  "date": "2026-11-05",
+  "mode": "owner-approved internal Sentinel monitoring",
+  "monitor": {
+    "role": "monitor",
+    "image": "sha256:75af624318092f3117a883efe1bc6e932667864dbedd8e1ed4632edd84235cd4",
+    "healthy": true,
+    "protectedServicesPreserved": true,
+    "rollback": "v79-sentinel-dell-monitor-rollback-sentinel-20261105"
+  },
+  "gateway": {
+    "role": "gateway",
+    "image": "sha256:7beea0a2968db7c4b1664577f4b9d367b506f646919cac0210aefe0b87e5fdbb",
+    "healthy": true,
+    "protectedServicesPreserved": true,
+    "rollback": "v79-evidence-gateway-rollback-sentinel-20261105-witness"
+  },
+  "boundaries": {
+    "signedSource": true,
+    "offhostSentinelWitness": true,
+    "browserPrivateRead": 403,
+    "signedReplay": 409,
+    "publicInternalRead": 404,
+    "anonymousMcp": 401
+  },
+  "ownerQueue": {
+    "sourceStatus": "PASS",
+    "realServicesUp": 7,
+    "syntheticAlertQueueTest": true,
+    "ownerProposalId": "f4c3ae64-4418-4ddd-81a8-9eb62e3662a6",
+    "automaticRepairs": false,
+    "sourceRecordId": "f790a564-c1b6-4c96-92d5-2357beb54de0",
+    "browserVisibilityVerified": true,
+    "testProposalFinalStatus": "cancelled"
+  },
+  "offhostRecovery": {
+    "restoreVerified": true,
+    "archiveSha256": "12fb8fff6caac704f67efb971ecdb8ab320f737815fbf40a9ba12cd2d6d77fd6",
+    "signerPublicKeyMatched": true,
+    "gatewaySnapshotIntegrity": true,
+    "gatewayEvidenceRows": 384,
+    "host": "firelion-Aspire-A315-51"
+  },
+  "deployedSourceHashes": {
+    "v79-sentinel-dell-monitor:sentinel.py": "fae4d58ed2861d6abe17c7a3399ed719291fa515fdcf13fd8cd917757e377316",
+    "v79-sentinel-dell-monitor:noc/workforce_evidence_sink.py": "01e9ae3ee4cdfb17b6d371bd062f5930a882003b2d5f153fb97cecff2c812f0e",
+    "v79-evidence-gateway:evidence_gateway/server.py": "e74cf55cc8afdeea47a7bf31c7f9427e6b58a3195e8bc59a28c43ac26c563475",
+    "v79-evidence-gateway:evidence_gateway/store.py": "a13c76b6c84d13a6b2e0c32116e0ef3990d6e5c7886f9155e96e1621d2fcc9cf",
+    "v79-evidence-gateway:evidence_gateway/sentinel_contract.py": "75a821d812c7ca0ea527a4d57bba798dc728092da3eac3445b9302310e84f8cb"
+  },
+  "independentWitness": "Acer-signed source sequence observations, 180-second expiry; separate from unwitnessed general Gateway audit anchor",
+  "automatedRepairs": false,
+  "emailDeliveryAdded": false
+}

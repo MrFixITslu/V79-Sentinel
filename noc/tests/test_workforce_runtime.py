@@ -26,6 +26,18 @@ class Integration(unittest.TestCase):
  def db(self):
   c=sqlite3.connect(self.root/"relay.sqlite");c.execute("CREATE TABLE status(id INTEGER PRIMARY KEY,state TEXT,episode TEXT,body TEXT,job TEXT,updated REAL)")
   return c
+ def test_independent_witness_contract_and_scope(self):
+  self.sink(self.receipt());e=json.loads(json.dumps(self.sent[-1]));r=e["record"];r.update({"publisher":"test-witness","id":__import__("uuid").uuid4().__str__(),"sequence":1,"category":"sentinel_witness","provenance":"independent_sequence_witness","measurements":{"sourceSequence":1,"sourceAgeSeconds":0,"rollbackDetected":False,"sourceValid":True}})
+  self.store.publishers["test-witness"]={"publicKey":self.pin,"targets":["sentinel"],"categories":["sentinel_witness"],"provenance":["independent_sequence_witness"]}
+  e["signature"]=self.key.sign(canonical(r)).hex();self.store.ingest(e);self.assertEqual(self.store.read("sentinel","sentinel_witness")["status"],"PASS");self.assertEqual(self.store.read("sentinel","sentinel_witness",now=time.time()+901)["status"],"STALE")
+  r["sequence"]=2;r["id"]=str(__import__("uuid").uuid4());r["measurements"]["rollbackDetected"]=True;e["signature"]=self.key.sign(canonical(r)).hex()
+  with self.assertRaises(Denied):self.store.ingest(e)
+  r["status"]="FAIL";e["signature"]=self.key.sign(canonical(r)).hex();self.store.ingest(e);self.assertEqual(self.store.read("sentinel","sentinel_witness")["status"],"FAIL")
+ def test_witness_failure_and_absence_reach_owner_alerts(self):
+  self.assertEqual(relay.witness_state("PASS",{},None)[0],"WITNESS_UNAVAILABLE")
+  self.assertEqual(relay.witness_state("PASS",{},{"status":"STALE","integrity":"verified-signature"})[0],"WITNESS_UNAVAILABLE")
+  self.assertEqual(relay.witness_state("PASS",{},{"status":"FAIL","integrity":"verified-signature"})[0],"ROLLBACK")
+  self.assertEqual(relay.witness_state("PASS",{},{"status":"PASS","integrity":"verified-signature"})[0],"PASS")
  def test_restart_preserves_sender_counter(self):
   self.sink(self.receipt());second=EvidenceSink(state=str(self.root/"sender"),key=self.key,token="test",send=self.send);second(self.receipt())
   self.assertEqual([x["record"]["sequence"] for x in self.sent],[1,2])

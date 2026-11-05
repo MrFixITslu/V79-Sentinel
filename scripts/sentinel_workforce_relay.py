@@ -31,6 +31,10 @@ def signal(envelope,pin,now):
   if r["status"]!=state:raise ValueError()
   return state,m
  except Exception:return "UNKNOWN",{}
+def witness_state(state,counts,witness):
+ if isinstance(witness,dict) and witness.get("integrity")=="verified-signature" and witness.get("status")=="FAIL":return "ROLLBACK",{}
+ if state=="PASS" and (not isinstance(witness,dict) or witness.get("integrity")!="verified-signature" or witness.get("status")!="PASS"):return "WITNESS_UNAVAILABLE",{}
+ return state,counts
 def transition(c,state,counts,now,post,identity):
  c.execute("CREATE TABLE IF NOT EXISTS cooldown(id INTEGER PRIMARY KEY,last REAL)")
  c.execute("BEGIN IMMEDIATE")
@@ -42,7 +46,7 @@ def transition(c,state,counts,now,post,identity):
  if state!="PASS" and not episode and (not last_alert or now-last_alert[0]>=1800):
   episode=hashlib.sha256((identity+":"+str(now)).encode()).hexdigest()[:32]
   detail=("Sentinel signed aggregate requires owner review. Status "+state+". "+
-    ("Observed "+str(counts["servicesObserved"])+"; up "+str(counts["up"])+"; down "+str(counts["down"])+"; degraded "+str(counts["degraded"])+". " if counts else "No current authenticated source observation is available. ")+
+    ("Observed "+str(counts["servicesObserved"])+"; up "+str(counts["up"])+"; down "+str(counts["down"])+"; degraded "+str(counts["degraded"])+". " if counts else "A required authenticated observation or independent sequence witness is unavailable. ")+
     "These are source-reported HTTPS reachability observations, not independent security certification. Review current evidence before action; repairs require separate approval.")
   body=json.dumps({"operation":"create_work_item","system":"sentinel","summary":"Sentinel monitoring alert: "+state,"payload":{"detail":detail},"idempotencyKey":"sentinel_"+episode},sort_keys=True)
   job=None
@@ -64,7 +68,7 @@ def main():
   c.execute("CREATE TABLE IF NOT EXISTS status(id INTEGER PRIMARY KEY,state TEXT,episode TEXT,body TEXT,job TEXT,updated REAL)")
   try:
    _,payload=request("http://172.25.0.1:8765/internal/sentinel",Path(cfg["gatewayTokenFile"]).read_text().strip())
-   state,counts=signal(payload.get("envelope"),cfg["publicKey"],time.time())
+   state,counts=signal(payload.get("envelope"),cfg["publicKey"],time.time());state,counts=witness_state(state,counts,payload.get("witness"))
   except Exception:state,counts="UNKNOWN",{}
   def post(body):
    status,result=request("https://hub.v79sl.com/internal/workforce/propose",Path(cfg["workerTokenFile"]).read_text().strip(),body,True)
