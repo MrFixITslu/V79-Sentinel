@@ -204,7 +204,13 @@ def main():
                 {"name":t["name"],"url":t["url"],"status":"pending",
                  "http":None,"ms":None,"dns_ms":None,"cert_days":None,
                  "message":"Awaiting first cycle"} for t in targets]})
-        threading.Thread(target=monitor_forever,args=(targets,store),daemon=True).start()
+        from noc.workforce_evidence_sink import configured_sink
+        try:
+            sink=configured_sink()
+        except Exception:
+            logging.error("SIGNED_EVIDENCE_CONFIGURATION_UNAVAILABLE")
+            sink=None
+        threading.Thread(target=monitor_forever,args=(targets,store,sink),daemon=True).start()
     else:
         with state_lock:
             state.update(demo_snapshot(targets))
