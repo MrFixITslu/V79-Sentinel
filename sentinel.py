@@ -72,7 +72,12 @@ def get_snapshot():
         return json.loads(json.dumps(state))
 
 
-def monitor_forever(targets, store):
+def monitor_forever(targets, store, evidence_sink=None):
+    """Read-only sampler. Optional source candidate tap is OFF by default.
+
+    This source-only review hook is not registered by main() and is not an
+    API, signer, sender, network publisher or production trust assertion.
+    """
     while True:
         started=time.monotonic()
         try:
@@ -81,13 +86,30 @@ def monitor_forever(targets, store):
             summary=store.summary(targets)
             lab=dell_status()
             with state_lock:
-                state.update({"mode":"live", "last_check":now_iso(),
+                checked_at=now_iso()
+                cycle=state["cycle"]+1
+                state.update({"mode":"live", "last_check":checked_at,
                               "services":readings, "history":summary["history"],
                               "uptime24h":summary["uptime24h"],
                               "trend":summary["trend"],
-                              "cycle":state["cycle"]+1, "error":None, "lab":lab})
+                              "cycle":cycle, "error":None, "lab":lab})
             logging.info("Cycle %s: %s/%s healthy",
-                         state["cycle"], sum(x["status"]=="up" for x in readings),len(readings))
+                         cycle, sum(x["status"]=="up" for x in readings),len(readings))
+            if evidence_sink is not None:
+                # Only the just-sampled in-process readings may enter this
+                # optional review projection; never reuse /api/status JSON.
+                # Do NOT enable a signing or alert sink without separate
+                # process-origin, key-custody and off-host acceptance.
+                try:
+                    from noc.inprocess_probe_receipt import project_probe_cycle
+                    candidate=project_probe_cycle(
+                        targets=targets, readings=readings,
+                        cycle=cycle, observed_at=checked_at)
+                    evidence_sink(candidate)
+                except Exception:
+                    # Never leak untrusted probe text or sink exceptions.
+                    # A review sink failure must not stop the live sampler.
+                    logging.warning("INPROCESS_REVIEW_CANDIDATE_REFUSED")
         except Exception as exc:
             logging.exception("Monitoring cycle failure")
             with state_lock:

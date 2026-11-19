@@ -1,0 +1,6 @@
+# Python 3.12 / linux-amd64 only — source-only Sentinel candidate dependencies.
+# SHA-256 wheel hashes captured in isolated GitHub Actions run 40763769585.
+# Wheel origins must be independently reviewed before a signed release.
+cryptography==50.0.2 --hash=sha256:9dab55f57c74c3cad24c323bacbbd04be4705ba6eb0d92e920b1fc4837ed5079
+cffi==2.0.0 --hash=sha256:3e17ed538242334bf70832644a32a7aae3d83b57567f9fd60a26257e992b79ba
+pycparser==2.23 --hash=sha256:e5c6e8d3fbad53479cab09ac03729e0a9faf2bee3db8208a550daf5af81a5934

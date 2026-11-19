@@ -1,0 +1,35 @@
+name: Sentinel candidate wheel lock discovery (NO IMAGE / NO DEPLOY)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/sentinel-candidate-wheel-audit.yml'
+      - 'images/sentinel-candidate.Dockerfile'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-wheel-hashes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Fetch exactly three public dependency wheels and print SHA-256 pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          WHEELS="$RUNNER_TEMP/sentinel-locked-wheel-review"
+          mkdir -p "$WHEELS"
+          python -m pip download --only-binary=:all: --no-deps --dest "$WHEELS" \
+            'cryptography==50.0.2' 'cffi==2.0.0' 'pycparser==2.23'
+          test "$(find "$WHEELS" -type f | wc -l)" -eq 3
+          echo "BEGIN_PUBLIC_PYPI_WHEEL_SHA256"
+          sha256sum "$WHEELS"/*.whl | sed "s#${WHEELS}/##"
+          echo "END_PUBLIC_PYPI_WHEEL_SHA256"
+          # No install, artifact upload, credential, image push or service access.
